@@ -6,7 +6,7 @@ using server.Domain.Entities;
 
 namespace server.Application.Common.Interfaces
 {
-    public interface IDeparment : IRepository<Department>
+    public interface IDepartment : IRepository<Department>
     {
         Task<CursorPaginatedResult<Department>> GetDepartmentPageAsync(DepartmentSearch request);
     }

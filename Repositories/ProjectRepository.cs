@@ -31,7 +31,7 @@ public class ProjectRepository : SimpleCrudRepository<Project, Guid>, IProjectRe
         if (entity == null)
             throw new BadRequestException("Please provide project details.");
 
-        entity.id = Uuid7.NewUuid7().ToGuid();
+        entity.Id = Uuid7.NewUuid7().ToGuid();
         var existingManagerId = await _userRepository.GetByIdAsync(entity.Manager_id);
         if (existingManagerId == null)
             throw new BadRequestException("Invalid manager ID.");
@@ -58,7 +58,7 @@ public class ProjectRepository : SimpleCrudRepository<Project, Guid>, IProjectRe
 
             if (queryResult > 0)
             {
-                var result = await GetByIdAsync(entity.id);
+                var result = await GetByIdAsync(entity.Id);
                 if (result != null)
                     return result;
                 throw new BadRequestException("Project created, but failed to retrieve it.");
@@ -186,7 +186,7 @@ public class ProjectRepository : SimpleCrudRepository<Project, Guid>, IProjectRe
             var existingProject = await GetByIdAsync(id)
                 ?? throw new NotFoundException("Project not found");
 
-            entity.id = id;
+            entity.Id = id;
             var existingManagerId = await _userRepository.GetByIdAsync(entity.Manager_id);
             if (existingManagerId == null)
                 throw new BadRequestException("Invalid manager ID.");

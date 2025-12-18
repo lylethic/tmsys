@@ -32,7 +32,7 @@ public class ProgressUpdateRepository : IProgressUpdateRepository
         if (entity == null)
             throw new BadRequestException("Please provide progress update details.");
 
-        entity.id = Uuid7.NewUuid7().ToGuid();
+        entity.Id = Uuid7.NewUuid7().ToGuid();
         entity.User_id = Guid.Parse(_assistantService.UserId);
 
         var existingTaskId = await _taskRepository.GetByIdAsync(entity.Task_id);
@@ -59,7 +59,7 @@ public class ProgressUpdateRepository : IProgressUpdateRepository
 
             if (queryResult > 0)
             {
-                var result = await GetByIdAsync(entity.id);
+                var result = await GetByIdAsync(entity.Id);
                 if (result != null)
                     return result;
                 throw new BadRequestException("Progress update created, but failed to retrieve it.");
@@ -157,7 +157,7 @@ public class ProgressUpdateRepository : IProgressUpdateRepository
             var existingProgressUpdate = await GetByIdAsync(id)
                 ?? throw new NotFoundException("Progress update not found");
 
-            entity.id = id;
+            entity.Id = id;
             var existingTaskId = await _taskRepository.GetByIdAsync(entity.Task_id);
             if (existingTaskId == null)
                 throw new NotFoundException($"Task with ID '{entity.Task_id}' does not exist.");

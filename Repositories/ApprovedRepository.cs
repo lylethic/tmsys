@@ -23,7 +23,7 @@ public class ApprovedRepository : SimpleCrudRepository<Approved_status, Guid>, I
     {
         try
         {
-            entity.id = Uuid7.NewUuid7().ToGuid();
+            entity.Id = Uuid7.NewUuid7().ToGuid();
             if (entity.sort_order < 0)
                 throw new BadRequestException("This sort order must be greater than zero");
 
@@ -46,7 +46,7 @@ public class ApprovedRepository : SimpleCrudRepository<Approved_status, Guid>, I
 
     public async Task DeleteItemAsync(Guid approvedStatusId)
     {
-        var entity = new Approved_status { id = approvedStatusId };
+        var entity = new Approved_status { Id = approvedStatusId };
         await DeleteAsync(entity);
     }
 

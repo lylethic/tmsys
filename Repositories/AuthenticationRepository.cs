@@ -86,11 +86,11 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
                 };
             }
 
-            var userRolesAndPermissions = await _userRepo.GetUserRolesAndPermissionsAsync(user.id);
+            var userRolesAndPermissions = await _userRepo.GetUserRolesAndPermissionsAsync(user.Id);
 
             var claims = new List<Claim>
             {
-                new ("user_id", user.id.ToString()),
+                new ("user_id", user.Id.ToString()),
                 new (ClaimTypes.Email, user.Email),
                 new ("session_id", Uuid7.NewUuid7().ToGuid().ToString())
             };
@@ -136,7 +136,7 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
             };
 
             // update last login time to users table
-            await _userRepo.UpdateLoginTime(user.id, accessToken);
+            await _userRepo.UpdateLoginTime(user.Id, accessToken);
 
             // commit
             transaction.Commit();
@@ -166,7 +166,7 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
             {
                 var resetCode = ValidatorHepler.GenerateRandomNumberList(6);
 
-                var rows = await _otpRepo.AddAsync(user.id, resetCode);
+                var rows = await _otpRepo.AddAsync(user.Id, resetCode);
                 if (!rows)
                     return "Failed to generate reset code.";
 
@@ -196,13 +196,13 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
         if (user == null)
             return "User not found";
 
-        var existingOtp = await _otpRepo.GetOTPCodeAsync(request.Code, user.id);
+        var existingOtp = await _otpRepo.GetOTPCodeAsync(request.Code, user.Id);
         if (existingOtp != null)
         {
-            var affected = await _userRepo.SetPassword(user.id, request.NewPassword);
+            var affected = await _userRepo.SetPassword(user.Id, request.NewPassword);
 
             // mark otp as used
-            await _otpRepo.UpdateOTPAsync(existingOtp.id);
+            await _otpRepo.UpdateOTPAsync(existingOtp.Id);
 
             if (affected)
                 return "Password has been reset successfully.";

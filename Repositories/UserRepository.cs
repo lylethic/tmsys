@@ -62,7 +62,7 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
             throw new BadRequestException("Invalid email address.");
 
 
-        entity.id = Uuid7.NewUuid7().ToGuid();
+        entity.Id = Uuid7.NewUuid7().ToGuid();
         entity.Password = BCrypt.Net.BCrypt.HashPassword(entity.Password);
         entity.Role_id = Guid.Parse("0fb06e55-320e-4085-8b73-91a8e0ee59b3");
 
@@ -86,12 +86,12 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
             // Insert into user_roles
             await _connection.ExecuteAsync(insertuserRoleSql, new
             {
-                userId = entity.id,
+                userId = entity.Id,
                 RoleId = entity.Role_id
             });
 
             // Get the inserted user
-            var inserted = await GetByIdAsync(entity.id)
+            var inserted = await GetByIdAsync(entity.Id)
                 ?? throw new BadRequestException("user created, but failed to retrieve it.");
 
             // --- Load Email Template ---
@@ -356,7 +356,7 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         if (existingUser != null)
             throw new BadRequestException($"Email already exists: {entity.Email}");
 
-        entity.id = Uuid7.NewUuid7().ToGuid();
+        entity.Id = Uuid7.NewUuid7().ToGuid();
         entity.Role_id = Guid.Parse("4e141ecb-fdc6-47c5-be03-1622af1a8e65"); // user
         entity.Password = BCrypt.Net.BCrypt.HashPassword(entity.Password);
         entity.Created_by = Guid.Parse(_assistantService.UserId);
@@ -386,14 +386,14 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
             // Insert into user_roles
             await _connection.ExecuteAsync(insertUserRoleSql, new
             {
-                UserId = entity.id,
+                UserId = entity.Id,
                 RoleId = entity.Role_id
             }, transaction);
 
             transaction.Commit();
 
             // Get the inserted user
-            var inserted = await GetByIdAsync(entity.id)
+            var inserted = await GetByIdAsync(entity.Id)
                 ?? throw new BadRequestException("User created, but failed to retrieve it.");
 
             // --- Load Email Template ---
@@ -484,13 +484,13 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
 
             if (!rolePermissionMap.ContainsKey(roleId))
             {
-                rolePermissionMap[roleId] = new Role { id = roleId, Name = roleName, Permissions = [] };
+                rolePermissionMap[roleId] = new Role { Id = roleId, Name = roleName, Permissions = [] };
             }
 
-            var permission = new Permission { id = permissionId, Name = permissionName };
+            var permission = new Permission { Id = permissionId, Name = permissionName };
             rolePermissionMap[roleId].Permissions.Add(permission);
 
-            if (!allPermissions.Any(p => p.id == permissionId))
+            if (!allPermissions.Any(p => p.Id == permissionId))
             {
                 allPermissions.Add(permission);
             }

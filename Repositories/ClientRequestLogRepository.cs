@@ -16,7 +16,7 @@ public class ClientRequestLogRepository(IDbConnection connection, ILogManager lo
     {
         try
         {
-            entity.id = Uuid7.NewUuid7().ToGuid();
+            entity.Id = Uuid7.NewUuid7().ToGuid();
             const string sql = @"
                 INSERT INTO client_request_log
                 (id, user_id, session_id, client_ip, user_agent, url, method, created)

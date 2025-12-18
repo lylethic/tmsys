@@ -128,23 +128,23 @@ public class PermissionRepository : SimpleCrudRepository<Permission, Guid>, IPer
             sql,
             (user, role, permission) =>
             {
-                if (!userDict.TryGetValue(user.id, out var userEntry))
+                if (!userDict.TryGetValue(user.Id, out var userEntry))
                 {
                     userEntry = user;
-                    userEntry.Role_id = role.id;
+                    userEntry.Role_id = role.Id;
                     userEntry.Permissions = [];
-                    userDict.Add(user.id, userEntry);
+                    userDict.Add(user.Id, userEntry);
                 }
 
                 if (role != null)
                 {
-                    if (!roleDict.TryGetValue(role.id, out var roleEntry))
+                    if (!roleDict.TryGetValue(role.Id, out var roleEntry))
                     {
                         roleEntry = role;
-                        roleDict.Add(role.id, roleEntry);
+                        roleDict.Add(role.Id, roleEntry);
                     }
 
-                    if (permission != null && !userEntry.Permissions.Any(p => p.id == permission.id))
+                    if (permission != null && !userEntry.Permissions.Any(p => p.Id == permission.Id))
                     {
                         userEntry.Permissions.Add(permission);
                     }
@@ -161,7 +161,7 @@ public class PermissionRepository : SimpleCrudRepository<Permission, Guid>, IPer
 
     public async Task<Permission> AddAsync(Permission permission)
     {
-        permission.id = Uuid7.NewUuid7().ToGuid(); ;
+        permission.Id = Uuid7.NewUuid7().ToGuid(); ;
         var sql = """
             INSERT INTO permissions (id, name) 
             VALUES (@Id, @Name)
@@ -169,7 +169,7 @@ public class PermissionRepository : SimpleCrudRepository<Permission, Guid>, IPer
         try
         {
             await _connection.ExecuteAsync(sql, permission);
-            var inserted = await GetByIdAsync(permission.id);
+            var inserted = await GetByIdAsync(permission.Id);
             if (inserted is not null)
                 return inserted;
             throw new BadRequestException("Permission created, but failed to retrieve it.");

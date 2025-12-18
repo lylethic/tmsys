@@ -11,23 +11,19 @@ using System.Data;
 
 namespace server.Repositories
 {
-    public class DepartmentRepository : SimpleCrudRepository<Department, Guid>, IDeparment
+    public class DepartmentRepository : SimpleCrudRepository<Department, Guid>, IDepartment
     {
-        private readonly IProjectRepository _projectrepository;
-        private readonly IUserRepository _userRepository;
         private readonly IAssistantService _assistantService;
 
-        public DepartmentRepository(IDbConnection connection, IUserRepository userRepository, IAssistantService assistantService, IProjectRepository projectrepository) : base(connection)
+        public DepartmentRepository(IDbConnection connection, IAssistantService assistantService) : base(connection)
         {
             _connection = connection;
-            _userRepository = userRepository;
             _assistantService = assistantService;
-            _projectrepository = projectrepository;
         }
 
         public async Task<Department> AddAsync(Department entity)
         {
-            entity.id = Uuid7.NewUuid7().ToGuid();
+            entity.Id = Uuid7.NewUuid7().ToGuid();
             entity.Created_by = Guid.Parse(_assistantService.UserId);
             var sql = """
                 INSERT INTO public.departments 
@@ -42,7 +38,7 @@ namespace server.Repositories
                 var query = await _connection.ExecuteAsync(sql, entity);
                 if (query > 0)
                 {
-                    var result = await GetByIdAsync(entity.id);
+                    var result = await GetByIdAsync(entity.Id);
                     if (result != null)
                         return result;
                     throw new BadRequestException("Department created, but failed to retrieve it.");
@@ -80,7 +76,7 @@ namespace server.Repositories
         public async Task<bool> UpdateItemAsync(Guid id, Department entity)
         {
             var existing = await base.GetByIdAsync(id)
-            ?? throw new NotFoundException("Department not found!");
+                ?? throw new NotFoundException("Department not found!");
             var sql = """
                 UPDATE public.departments
                 SET 

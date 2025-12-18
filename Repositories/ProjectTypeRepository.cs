@@ -19,7 +19,7 @@ public class ProjectTypeRepository(IDbConnection connection, IAssistantService a
     private readonly IAssistantService _assistant = assistant;
     public async Task<ProjectType> AddAsync(ProjectType entity)
     {
-        entity.id = Uuid7.NewUuid7().ToGuid();
+        entity.Id = Uuid7.NewUuid7().ToGuid();
         entity.Created_by = Guid.Parse(_assistant.UserId);
         var sql = """
             INSERT INTO project_types (id, name, description, created, created_by, active)
@@ -28,7 +28,7 @@ public class ProjectTypeRepository(IDbConnection connection, IAssistantService a
         try
         {
             await _connection.ExecuteAsync(sql, entity);
-            var result = await GetByIdAsync(entity.id);
+            var result = await GetByIdAsync(entity.Id);
             if (result is not null)
                 return result;
             throw new BadRequestException("Failed to add item.");
@@ -75,7 +75,7 @@ public class ProjectTypeRepository(IDbConnection connection, IAssistantService a
 
     public async Task<bool> UpdateItemAsync(Guid id, ProjectType entity)
     {
-        entity.id = id;
+        entity.Id = id;
         entity.Updated_by = Guid.Parse(_assistant.UserId);
         var sql = """
             UPDATE project_types SET

@@ -17,7 +17,7 @@ public class RoleRepository(IDbConnection connection) : SimpleCrudRepository<Rol
     {
         if (entity is null)
             throw new BadRequestException("Please enter your role.");
-        entity.id = Uuid7.NewUuid7().ToGuid();
+        entity.Id = Uuid7.NewUuid7().ToGuid();
         var sql = """
             INSERT INTO roles (id, name, description) 
             VALUES (@Id, @Name, @Description)
@@ -28,7 +28,7 @@ public class RoleRepository(IDbConnection connection) : SimpleCrudRepository<Rol
 
             if (queryResult > 0)
             {
-                var result = await GetByIdAsync(entity.id);
+                var result = await GetByIdAsync(entity.Id);
                 if (result is not null)
                     return result;
                 throw new BadRequestException("Role created, but failed to retrieve it.");
@@ -109,7 +109,7 @@ public class RoleRepository(IDbConnection connection) : SimpleCrudRepository<Rol
         {
             var existingRole = await GetByIdAsync(id)
                 ?? throw new NotFoundException("Role not found");
-            entity.id = id;
+            entity.Id = id;
             var sql = """
                 UPDATE roles
                 SET name = @Name, description = @Description

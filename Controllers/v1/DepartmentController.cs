@@ -16,9 +16,9 @@ namespace server.Controllers.v1
     [Route("v{version:apiVersion}/departments")]
     public class DepartmentController : BaseApiController
     {
-        private readonly IDeparment _repo;
+        private readonly IDepartment _repo;
         private readonly NotificationService _notificationService;
-        public DepartmentController(IDeparment departmentRepo,
+        public DepartmentController(IDepartment departmentRepo,
             NotificationService notificationService,
             IMapper mapper,
             IHttpContextAccessor httpContextAccessor,

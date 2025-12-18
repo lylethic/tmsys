@@ -84,7 +84,7 @@ namespace server.Common.Middlewares
 
             var log = new Client_request_log
             {
-                id = Uuid7.NewUuid7().ToGuid(),
+                Id = Uuid7.NewUuid7().ToGuid(),
                 User_id = string.IsNullOrEmpty(userId) ? null : Guid.Parse(userId),
                 Session_id = string.IsNullOrEmpty(sessionId) ? null : Guid.Parse(sessionId),
                 Client_ip = ip,

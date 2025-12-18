@@ -98,7 +98,7 @@ public class JwtPermissionService : IPermissionService
                 var permissionClaims = user.FindAll("permission").Select(c => c.Value).ToList();
                 if (permissionClaims.Any())
                 {
-                    return permissionClaims.Select(p => new Permission { id = Uuid7.NewUuid7().ToGuid(), Name = p }).ToList();
+                    return permissionClaims.Select(p => new Permission { Id = Uuid7.NewUuid7().ToGuid(), Name = p }).ToList();
                 }
             }
         }
@@ -129,7 +129,7 @@ public class JwtPermissionService : IPermissionService
                 var roleClaims = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
                 if (roleClaims.Any())
                 {
-                    return roleClaims.Select(r => new Role { id = Uuid7.NewUuid7().ToGuid(), Name = r }).ToList();
+                    return roleClaims.Select(r => new Role { Id = Uuid7.NewUuid7().ToGuid(), Name = r }).ToList();
                 }
             }
         }

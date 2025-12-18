@@ -37,7 +37,7 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
         if (existingUserId == null)
             throw new NotFoundException($"User with ID '{entity.Assigned_to}' does not exist.");
 
-        entity.id = Uuid7.NewUuid7().ToGuid();
+        entity.Id = Uuid7.NewUuid7().ToGuid();
         entity.Created_by = Guid.Parse(_assistantService.UserId);
 
         var sql = """
@@ -63,7 +63,7 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
 
             if (queryResult > 0)
             {
-                var result = await GetByIdAsync(entity.id);
+                var result = await GetByIdAsync(entity.Id);
                 if (result != null)
                     return result;
                 throw new BadRequestException("Task created, but failed to retrieve it.");
@@ -162,7 +162,7 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
             var existingTask = await GetByIdAsync(id)
                 ?? throw new NotFoundException("Task not found");
 
-            entity.id = id;
+            entity.Id = id;
 
             var existingProjectId = await _projectrepository.GetByIdAsync(entity.Project_id);
             if (existingProjectId == null)

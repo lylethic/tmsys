@@ -51,6 +51,7 @@
         <Compile Include="Repositories\PermissionService.cs" />
         <Compile Include="Repositories\RolePermissionRepository.cs" />
         <Compile Include="Repositories\RoleRepository.cs" />
+        <Compile Include="Repositories\UserDepartmentRepository.cs" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,11 +1,8 @@
-﻿#nullable disable
-using Dapper.Contrib.Extensions;
-using server.Common.Domain.Entities;
+using System;
 
-namespace server.Domain.Entities;
+namespace server.Application.DTOs;
 
-[Table("user_departments")]
-public partial class UserDepartment : SystemLogEntity<Guid>
+public class UpSertUserDepartment
 {
     public Guid User_id { get; set; }
 

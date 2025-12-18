@@ -66,5 +66,6 @@ public class AppAutoMapper : Profile
 
         // Department
         CreateMap<UpSertDepartment, Department>();
+        CreateMap<UpSertUserDepartment, UserDepartment>();
     }
 }

@@ -63,7 +63,8 @@ public static class ServiceCollectionExtension
         services.AddTransient<IProjectTypeRepository, ProjectTypeRepository>();
         services.AddTransient<IOtpRepository, OTPRepository>();
         services.AddTransient<IApprovedStatus, ApprovedRepository>();
-        services.AddTransient<IDeparment, DepartmentRepository>();
+        services.AddTransient<IDepartment, DepartmentRepository>();
+        services.AddTransient<IUserDepartment, UserDepartmentRepository>();
 
         // Hangfire
         services.AddTransient<IJobRunService, JobRunService>();

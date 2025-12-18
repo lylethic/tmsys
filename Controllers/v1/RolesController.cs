@@ -87,7 +87,7 @@ public class RolesController : BaseApiController
         try
         {
             var request = _mapper.Map<Role>(dto);
-            request.id = id;
+            request.Id = id;
             var result = await _roleRepo.UpdateItemAsync(id, request);
             return Success(result);
         }

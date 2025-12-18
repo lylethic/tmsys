@@ -41,7 +41,7 @@ public class ReportRepository : SimpleCrudRepository<Report, Guid>, IReportRepos
             throw new BadRequestException("Please provide a valid report type.");
         }
 
-        entity.id = Uuid7.NewUuid7().ToGuid();
+        entity.Id = Uuid7.NewUuid7().ToGuid();
 
         var existingProjectId = await _projectrepository.GetByIdAsync(entity.Project_id);
         if (existingProjectId == null)
@@ -67,7 +67,7 @@ public class ReportRepository : SimpleCrudRepository<Report, Guid>, IReportRepos
 
             if (queryResult > 0)
             {
-                var result = await GetByIdAsync(entity.id);
+                var result = await GetByIdAsync(entity.Id);
                 if (result != null)
                     return result;
                 throw new BadRequestException("Report created, but failed to retrieve it.");
@@ -192,7 +192,7 @@ public class ReportRepository : SimpleCrudRepository<Report, Guid>, IReportRepos
             var existingReport = await GetByIdAsync(id)
                 ?? throw new NotFoundException("Report not found");
 
-            entity.id = id;
+            entity.Id = id;
             var existingProjectId = await _projectrepository.GetByIdAsync(entity.Project_id);
             if (existingProjectId == null)
                 throw new NotFoundException($"Project with ID '{entity.Project_id}' does not exist.");
