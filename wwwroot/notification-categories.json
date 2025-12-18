@@ -1,0 +1,123 @@
+{
+  "notification": {
+    "name": "Hệ thống thông báo",
+    "categories": [
+      {
+        "name": "Quy trình nghiệp vụ",
+        "code": "WORKFLOW",
+        "icon": "./assets/icons/svg/workflow.svg",
+        "type": "100",
+        "group_code": "BUSINESS_FLOW",
+        "priority": 1,
+        "description": "Cảnh báo về tiến trình xử lý hồ sơ và công việc nội bộ",
+        "sub_categories": [
+          {
+            "name": "Thêm mới hồ sơ",
+            "code": "WF_NEW_RECORD",
+            "type": "101",
+            "icon": "./assets/icons/svg/add.svg",
+            "description": "Gửi khi có hồ sơ mới được tạo",
+            "reference": "workflow.record.create"
+          },
+          {
+            "name": "Chuyển hồ sơ",
+            "code": "WF_TRANSFER",
+            "type": "102",
+            "icon": "./assets/icons/svg/transfer.svg",
+            "description": "Thông báo chuyển giao giữa các bộ phận",
+            "reference": "workflow.record.transfer"
+          },
+          {
+            "name": "Cập nhật hồ sơ",
+            "code": "WF_UPDATE",
+            "type": "103",
+            "icon": "./assets/icons/svg/edit.svg",
+            "description": "Khi nội dung hồ sơ được chỉnh sửa bởi người khác",
+            "reference": "workflow.record.update"
+          }
+        ]
+      },
+      {
+        "name": "Nhân sự & Phòng ban",
+        "code": "HR",
+        "icon": "./assets/icons/svg/group-user.svg",
+        "type": "200",
+        "group_code": "HR",
+        "priority": 2,
+        "description": "Các thông báo liên quan đến nhân viên và người dùng",
+        "sub_categories": [
+          {
+            "name": "Tuyển dụng mới",
+            "code": "HR_NEW_JOINER",
+            "type": "201",
+            "icon": "./assets/icons/svg/user-plus.svg",
+            "description": "Gửi khi có nhân viên mới được thêm vào hệ thống",
+            "reference": "hr.staff.add"
+          },
+          {
+            "name": "Phê duyệt lương",
+            "code": "HR_PAYROLL_APPROVAL",
+            "type": "202",
+            "icon": "./assets/icons/svg/money.svg",
+            "description": "Cảnh báo khi bảng lương sẵn sàng phê duyệt",
+            "reference": "hr.payroll.approve"
+          }
+        ]
+      },
+      {
+        "name": "Quản lý công việc",
+        "code": "TASK",
+        "icon": "./assets/icons/svg/task.svg",
+        "type": "300",
+        "group_code": "TASK",
+        "priority": 3,
+        "description": "Thông báo về task, deadline và trạng thái công việc",
+        "sub_categories": [
+          {
+            "name": "Deadline sắp hết hạn",
+            "code": "TASK_DEADLINE",
+            "type": "301",
+            "icon": "./assets/icons/svg/clock.svg",
+            "description": "Cảnh báo cập nhật task trước hạn",
+            "reference": "task.deadline.software"
+          },
+          {
+            "name": "Task quá hạn",
+            "code": "TASK_OVERDUE",
+            "type": "302",
+            "icon": "./assets/icons/svg/alert.svg",
+            "description": "Thông báo task đã quá hạn xử lý",
+            "reference": "task.overdue"
+          }
+        ]
+      },
+      {
+        "name": "Hệ thống & Bảo trì",
+        "code": "SYSTEM",
+        "icon": "./assets/icons/svg/server.svg",
+        "type": "400",
+        "group_code": "SYSTEM",
+        "priority": 4,
+        "description": "Cảnh bảo liên quan đến trạng thái nền tảng hoặc bảo trì",
+        "sub_categories": [
+          {
+            "name": "Lịch bảo trì",
+            "code": "SYS_MAINTENANCE",
+            "type": "401",
+            "icon": "./assets/icons/svg/settings.svg",
+            "description": "Thông báo về lịch bảo trì, downtime",
+            "reference": "system.maintenance.schedule"
+          },
+          {
+            "name": "Sự cố hệ thống",
+            "code": "SYS_INCIDENT",
+            "type": "402",
+            "icon": "./assets/icons/svg/bug.svg",
+            "description": "Cảnh báo hệ thống gặp sự cố nghiêm trọng",
+            "reference": "system.incident"
+          }
+        ]
+      }
+    ]
+  }
+}

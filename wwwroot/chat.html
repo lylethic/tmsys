@@ -1,0 +1,78 @@
+<!-- Ví dụ file test-client.html -->
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>SignalR Chat Client</title>
+	</head>
+	<body>
+		<h1>SignalR Chat</h1>
+		<div>
+			<label for="targetUserId">Target User ID:</label>
+			<input type="text" id="targetUserId" />
+		</div>
+		<div>
+			<label for="messageInput">Message:</label>
+			<input type="text" id="messageInput" />
+			<button id="sendButton">Send Message</button>
+		</div>
+		<hr />
+		<ul id="messagesList"></ul>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+		<script>
+			// Thay thế bằng JWT token thực tế sau khi đăng nhập
+			const jwtToken =
+				'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNWQwNzU0OWUtOGM1Mi00MWFiLWFkYWYtOTg3NDkwNzc3ZjdhIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoibHlraW02ODEwQGdtYWlsLmNvbSIsInNlc3Npb25faWQiOiJjM2E4YjJlNC1lNjBkLTQzNTQtOWY3Ni1lZTJiZjgwMjJmZjQiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJVc2VyIiwicGVybWlzc2lvbiI6WyJERUxFVEUiLCJSRUFEIiwiRURJVCIsIkNSRUFURSJdLCJleHAiOjE3NzEzODM0ODIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMCIsImF1ZCI6Imh0dHA6Ly9sb2NhbGhvc3Q6NTAwMCJ9.I1H1vgVOa-NNqy04yz8f9m6ZYh9P3wLNCiOMIWEnuKs';
+
+			const connection = new signalR.HubConnectionBuilder()
+				.withUrl('/tms/api/hubs/notifications', {
+					accessTokenFactory: () => jwtToken,
+				})
+				.configureLogging(signalR.LogLevel.Information)
+				.build();
+
+			// Lắng nghe tin nhắn từ server
+			connection.on('ReceiveMessage', (user, message) => {
+				const li = document.createElement('li');
+				li.textContent = `${user}: ${message}`;
+				document.getElementById('messagesList').appendChild(li);
+			});
+
+			// Xử lý sự kiện click nút gửi
+			document
+				.getElementById('sendButton')
+				.addEventListener('click', async (event) => {
+					const targetUser = document.getElementById('targetUserId').value;
+					const message = document.getElementById('messageInput').value;
+
+					if (targetUser && message) {
+						try {
+							// Gọi phương thức 'SendMessageToUser' trên Hub
+							await connection.invoke('SendMessageToUser', targetUser, message);
+							document.getElementById('messageInput').value = ''; // Xóa input sau khi gửi
+						} catch (err) {
+							console.error(err.toString());
+						}
+					}
+					event.preventDefault();
+				});
+
+			// Bắt đầu kết nối
+			async function start() {
+				try {
+					await connection.start();
+					console.log('SignalR Connected.');
+				} catch (err) {
+					console.error(err.toString());
+					setTimeout(start, 5000); // Thử kết nối lại sau 5 giây
+				}
+			}
+
+			connection.onclose(async () => {
+				await start();
+			});
+
+			start();
+		</script>
+	</body>
+</html>

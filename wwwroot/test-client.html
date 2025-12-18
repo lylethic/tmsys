@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>SignalR Test Client</title>
+		<meta charset="UTF-8" />
+		<style>
+			body {
+				font-family: sans-serif;
+			}
+			#messagesList li {
+				background: #eef;
+				margin-bottom: 5px;
+				padding: 8px;
+				border-radius: 4px;
+			}
+			#messagesList li.error {
+				background: #fdd;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>SignalR Notification Tester</h1>
+		<p>Đang chờ thông báo từ server...</p>
+		<ul id="messagesList"></ul>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+		<script>
+			// Lấy userId từ một prompt để giả lập user đã đăng nhập
+			// Trong ứng dụng thật, bạn sẽ lấy từ token hoặc cookie
+			const userId = prompt(
+				'Please enter your User ID to join the notification group:',
+				'085f532c-91ae-4a3a-a255-61de4a29e479'
+			);
+
+			const connection = new signalR.HubConnectionBuilder()
+				.withUrl(`/tms/api/hubs/notifications`, {
+					// Gửi token nếu hub của bạn yêu cầu xác thực
+					// accessTokenFactory: () => your_auth_token
+				})
+				.withAutomaticReconnect()
+				.configureLogging(signalR.LogLevel.Information)
+				.build();
+
+			// Lắng nghe sự kiện "ReceiveMessage" mà server gửi
+			connection.on('ReceiveMessage', (user, message) => {
+				console.log(`Message received from ${user}: ${message}`);
+				const li = document.createElement('li');
+				li.innerHTML = `<strong>[${user}]</strong>: ${message}`;
+				document.getElementById('messagesList').prepend(li);
+			});
+
+			async function start() {
+				try {
+					await connection.start();
+					console.log('SignalR Connected.');
+					// Sau khi kết nối, hub trên server sẽ tự động thêm client này vào group
+					// có tên là userId (dựa trên logic trong OnConnectedAsync)
+					const li = document.createElement('li');
+					li.textContent = `✅ Connected to SignalR. Listening for notifications for user: ${userId}`;
+					document.getElementById('messagesList').prepend(li);
+				} catch (err) {
+					console.error(err);
+					const li = document.createElement('li');
+					li.className = 'error';
+					li.textContent = `❌ SignalR connection failed: ${err}`;
+					document.getElementById('messagesList').prepend(li);
+					setTimeout(start, 5000); // Thử kết nối lại sau 5 giây
+				}
+			}
+
+			connection.onclose((error) => {
+				console.error(
+					`Connection closed due to error: "${error}". Trying to reconnect...`
+				);
+				const li = document.createElement('li');
+				li.className = 'error';
+				li.textContent = `🔌 Connection closed. Reconnecting...`;
+				document.getElementById('messagesList').prepend(li);
+			});
+
+			// Bắt đầu kết nối
+			if (userId) {
+				start();
+			} else {
+				alert('User ID is required to test.');
+			}
+		</script>
+	</body>
+</html>
