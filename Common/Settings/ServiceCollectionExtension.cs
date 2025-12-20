@@ -12,7 +12,6 @@ using server.Logging;
 using server.Notifications;
 using server.Repositories;
 using server.Services;
-using server.Services.Templates;
 
 namespace server.Common.Settings;
 
@@ -65,6 +64,7 @@ public static class ServiceCollectionExtension
         services.AddTransient<IApprovedStatus, ApprovedRepository>();
         services.AddTransient<IDepartment, DepartmentRepository>();
         services.AddTransient<IUserDepartment, UserDepartmentRepository>();
+        services.AddTransient<IOtpService, OtpService>();
 
         // Hangfire
         services.AddTransient<IJobRunService, JobRunService>();

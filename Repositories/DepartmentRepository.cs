@@ -77,6 +77,7 @@ namespace server.Repositories
         {
             var existing = await base.GetByIdAsync(id)
                 ?? throw new NotFoundException("Department not found!");
+            entity.Id = id;
             var sql = """
                 UPDATE public.departments
                 SET 
@@ -87,6 +88,7 @@ namespace server.Repositories
                     active = @Active,
                     updated = @Updated,
                     updated_by = @Updated_by
+                WHERE id = @Id;
             """;
             var result = await _connection.ExecuteAsync(sql, entity);
             if (result > 0) return true;

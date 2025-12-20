@@ -15,7 +15,7 @@ public class DomainUpdate
     public bool? Active { get; set; } = true;
 
     [JsonIgnore]
-    [Column("updated_at")]
+    [Column("updated")]
     public DateTime? Updated { get; set; } = DateTime.UtcNow;
 
     [JsonIgnore]

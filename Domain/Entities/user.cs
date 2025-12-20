@@ -22,5 +22,8 @@ public class User : SystemLogEntity<Guid>
     public string Token { get; set; } = string.Empty;
     public bool? Is_send_email { get; set; }
     public string Profilepic_data { get; set; } = string.Empty;
+    public int Failed_otp_attempts { get; set; }
+    public DateTime? Lockout_end_at { get; set; }
+    public DateTime? Last_otp_sent_at { get; set; }
     public virtual List<Permission> Permissions { get; set; } = [];
 }

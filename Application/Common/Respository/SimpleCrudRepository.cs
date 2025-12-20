@@ -57,12 +57,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
             LIMIT 1;
         """;
 
-        var result = await _connection.QueryFirstOrDefaultAsync<T>(sql, new { Id = id });
-        if (result is null)
-        {
-            throw new BadRequestException("No data found!");
-        }
-        return result;
+        return await _connection.QueryFirstOrDefaultAsync<T>(sql, new { Id = id });
     }
 
     /// <summary>
@@ -157,7 +152,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
         PaginationRequest request,
         string? whereClause = null,
         object? parameters = null,
-        string orderBy = "created_at DESC")
+        string orderBy = "created DESC")
     {
         var sql = new StringBuilder($"""SELECT * FROM {_dbTableName}""");
 

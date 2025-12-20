@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace server.Services.Templates;
+namespace server.Services;
 
 public static class EmailTemplateManager
 {
@@ -88,6 +88,22 @@ public static class EmailTemplateManager
 
         templateContent = templateContent.Replace("{{Email}}", userEmail)
                                            .Replace("{{Name}}", userName ?? "User")
+                                           .Replace("{{AppName}}", "Loopy");
+
+        return templateContent;
+    }
+
+    /// <summary>
+    /// Forgot password
+    /// </summary>
+    /// <param name="userEmail"></param>
+    /// <param name="code"></param>
+    /// <returns></returns>
+    public static async Task<string> GetCodeToResetPasswordAsync(string userEmail, string code)
+    {
+        string templateContent = await LoadTemplateAsync("ForgotPasswordTemplate.html");
+        templateContent = templateContent.Replace("{{email}}", userEmail)
+                                           .Replace("{{code}}", code)
                                            .Replace("{{AppName}}", "Loopy");
 
         return templateContent;

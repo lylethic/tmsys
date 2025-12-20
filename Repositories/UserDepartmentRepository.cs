@@ -1,4 +1,3 @@
-using System;
 using System.Data;
 using Dapper;
 using Medo;
@@ -95,13 +94,13 @@ namespace server.Repositories
                 param.Add("EndDate", endDate);
             }
 
-            if (request.UserId != Guid.Empty)
+            if (request.UserId.HasValue && request.UserId.Value != Guid.Empty)
             {
                 where.Add("ud.user_id = @UserId");
                 param.Add("UserId", request.UserId);
             }
 
-            if (request.DepartmentId != Guid.Empty)
+            if (request.DepartmentId.HasValue && request.DepartmentId.Value != Guid.Empty)
             {
                 where.Add("ud.department_id = @DepartmentId");
                 param.Add("DepartmentId", request.DepartmentId);
@@ -129,18 +128,18 @@ namespace server.Repositories
 
             var rows = await _connection.QueryAsync<
                 UserDepartment,
-                User,
+                ExtendUser,
                 Department,
                 UserDepartmentModel>(
                 sql,
                 (ud, user, dept) => new UserDepartmentModel
                 {
                     UserDepartment = ud,
-                    User = user,
-                    Department = dept
+                    ExtendUser = user,
+                    ExtendDepartment = dept
                 },
                 param,
-                splitOn: "Id,Id"
+                splitOn: "id,id"
             );
 
             var list = rows.ToList();
@@ -167,8 +166,22 @@ namespace server.Repositories
 
         public async Task<bool> UpdateItemAsync(Guid id, UserDepartment entity)
         {
-            _ = await base.GetByIdAsync(id)
+            var existing = await base.GetByIdAsync(id)
                 ?? throw new NotFoundException("User's department not found!");
+
+            entity.Id = id;
+            if (entity.User_id != existing.User_id)
+            {
+                var _ = await _userRepo.GetByIdAsync(entity.User_id)
+                 ?? throw new NotFoundException("User not found!");
+            }
+
+            if (entity.Department_id != existing.Department_id)
+            {
+                var _ = await _departmentRepo.GetByIdAsync(entity.Department_id)
+                    ?? throw new NotFoundException("Department not found!");
+            }
+
             var sql = """
                 UPDATE public.user_departments
                 SET 
@@ -180,10 +193,46 @@ namespace server.Repositories
                     active = @Active,
                     updated = @Updated,
                     updated_by = @Updated_by
+                WHERE id = @Id
             """;
             var result = await _connection.ExecuteAsync(sql, entity);
             if (result > 0) return true;
             throw new BadRequestException("Failed to update user's department");
+        }
+
+        /// <summary>
+        /// Get user's department by ID, integrate with their userInfo and their department
+        /// </summary>
+        /// <returns></returns>
+        public async Task<UserDepartmentModel?> GetDetailByIdAsync(Guid id)
+        {
+            var query = """
+                SELECT
+                    ud.* ,
+                    u.id, u.username, u.name, u.email, u.profilepic, u.city, u.active,
+                    d.*
+                FROM public.user_departments AS ud
+                    JOIN public.users AS u ON u.id= ud.user_id
+                    JOIN public.departments AS d ON d.id = ud.department_id
+                WHERE ud.id = @Id;
+            """;
+            var result = await _connection.QueryAsync<
+                UserDepartment,
+                ExtendUser,
+                Department,
+                UserDepartmentModel>(
+                query,
+                (ud, user, dept) => new UserDepartmentModel
+                {
+                    UserDepartment = ud,
+                    ExtendUser = user,
+                    ExtendDepartment = dept
+                },
+                new { Id = id },
+                splitOn: "id,id" // The first ID column of the users and departments table.
+            );
+
+            return result.FirstOrDefault();
         }
     }
 }

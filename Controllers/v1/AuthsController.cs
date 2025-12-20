@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using server.Application.Common.Interfaces;
 using server.Application.DTOs;
+using server.Application.Enums;
 using server.Application.Request;
 using server.Common.CoreConstans;
 using server.Common.Interfaces;
@@ -25,8 +26,9 @@ public class AuthsController : BaseApiController
         IServiceProvider serviceProvider,
         IMapper mapper,
         IHttpContextAccessor httpContextAccessor,
-        ILogManager logger,
-        IAuth auth, IUserRepository userRepo) : base(mapper, httpContextAccessor, logger)
+        IAuth auth, IUserRepository userRepo,
+        ILogManager loggerManager
+    ) : base(mapper, httpContextAccessor, loggerManager)
     {
         _auth = auth;
         _userRepo = userRepo;
@@ -169,12 +171,25 @@ public class AuthsController : BaseApiController
     //     }
     // }
 
-    [HttpPost("send-code")]
-    public async Task<IActionResult> SendCode(string userEmail)
+
+    [HttpPost("revoke-refresh-token")]
+    public async Task<IActionResult> RevokeRefreshToken([FromBody] string? refreshToken)
     {
         try
         {
-            var result = await _auth.SendResetCode(userEmail);
+            var result = await _auth.RevokeRefreshToken(refreshToken);
+
+            if (result.Status != (int)AuthStatus.Success)
+            {
+                return StatusCode(result.Status, new
+                {
+                    httpStatus = result.Status,
+                    isSuccess = false,
+                    message = result.Message,
+                    errors = result.Errors
+                });
+            }
+
             return Success(result);
         }
         catch (Exception ex)
@@ -182,38 +197,6 @@ public class AuthsController : BaseApiController
             return Error(ex.Message);
         }
     }
-
-    [HttpPost("confirm-reset-password")]
-    public async Task<IActionResult> ConfirmResetPassword(ResetPasswordRequest request)
-    {
-        try
-        {
-            var result = await _auth.ConfirmResetPassword(request);
-            return Success(result);
-        }
-        catch (Exception ex)
-        {
-            return Error(ex.Message);
-        }
-    }
-
-    // [HttpGet("debug/env")]
-    // public IActionResult GetEnvironmentVariables()
-    // {
-    //     var envVars = new Dictionary<string, string?>
-    //     {
-    //         { "ACCESSTOKEN_COOKIENAME", Environment.GetEnvironmentVariable("ACCESSTOKEN_COOKIENAME") },
-    //         { "ACCESSTOKEN_EXPIRY_COOKIENAME", Environment.GetEnvironmentVariable("ACCESSTOKEN_EXPIRY_COOKIENAME") },
-    //         { "REFRESHTOKEN_COOKIENAME", Environment.GetEnvironmentVariable("REFRESHTOKEN_COOKIENAME") },
-    //         { "REFRESHTOKEN_EXPIRY_COOKIENAME", Environment.GetEnvironmentVariable("REFRESHTOKEN_EXPIRY_COOKIENAME") },
-    //         { "JWT_EXPIRY_HOURS", Environment.GetEnvironmentVariable("JWT_EXPIRY_HOURS") },
-    //         { "JWT_REFRESH_EXPIRY_HOURS", Environment.GetEnvironmentVariable("JWT_REFRESH_EXPIRY_HOURS") },
-    //         // { "API_SECRET", Environment.GetEnvironmentVariable("API_SECRET") },
-    //         { "JWT_ISSUER", Environment.GetEnvironmentVariable("JWT_ISSUER") },
-    //         { "JWT_AUDIENCE", Environment.GetEnvironmentVariable("JWT_AUDIENCE") }
-    //     };
-    //     return Ok(envVars);
-    // }
 
     /// <summary>
     /// Logout the current user.

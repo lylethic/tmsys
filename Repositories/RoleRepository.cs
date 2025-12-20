@@ -63,7 +63,7 @@ public class RoleRepository(IDbConnection connection) : SimpleCrudRepository<Rol
     {
         var sql = """
             SELECT * FROM roles
-            ORDER BY created_at DESC
+            ORDER BY created DESC
             OFFSET @Offset ROWS
             FETCH NEXT @PageSize ROWS ONLY;
 

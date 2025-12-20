@@ -10,4 +10,5 @@ namespace server.Application.Common.Interfaces;
 public interface IUserDepartment : IRepository<UserDepartment>
 {
     Task<CursorPaginatedResult<UserDepartmentModel>> GetDepartmentPageAsync(UserDepartmentSearch request);
+    Task<UserDepartmentModel?> GetDetailByIdAsync(Guid id);
 }

@@ -7,8 +7,7 @@ namespace server.Application.Common.Interfaces;
 public interface IAuth
 {
     public Task<AuthResponse> Login(AuthRequest model);
-    public Task<string> SendResetCode(string userEmail);
-    public Task<string> ConfirmResetPassword(ResetPasswordRequest request);
+    Task<AuthResponse> RevokeRefreshToken(string? refreshToken);
     Task Logout();
-
+    Task<bool> UpdateRemoveToken(string email);
 }

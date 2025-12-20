@@ -1,11 +1,13 @@
 using System;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using Medo;
 using Microsoft.Extensions.Caching.Memory;
 using server.Application.Common.Interfaces;
 using server.Domain.Entities;
 
-namespace server.Repositories;
+namespace server.Services;
 
 public class JwtPermissionService : IPermissionService
 {

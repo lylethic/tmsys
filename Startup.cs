@@ -12,7 +12,7 @@ using server.Common.Middlewares;
 using server.Common.Models;
 using server.Common.Settings;
 using server.Hubs;
-using server.Services.Templates;
+using server.Services;
 using System.Text.Json.Serialization;
 
 public class Startup

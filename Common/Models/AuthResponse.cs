@@ -14,6 +14,12 @@ public class AuthResponse
     public string Token { get; set; } = string.Empty;     // JWT access token
     [JsonPropertyName("tokenExpiredTime")]
     public DateTime TokenExpiredTime { get; set; } // Expiration datetime of the token
+
+    [JsonPropertyName("refreshToken")]
+    public string RefreshToken { get; set; } = string.Empty;
+    [JsonPropertyName("refreshTokenExpiredTime")]
+    public DateTime RefreshTokenExpiredTime { get; set; }
+
     [JsonPropertyName("data")]
     public object? Data { get; set; } = null!;
     [JsonPropertyName("errors")]
@@ -27,12 +33,14 @@ public class AuthResponse
         Message = message;
     }
 
-    public AuthResponse(AuthStatus status, string token, DateTime tokenExpireTime, object data)
+    public AuthResponse(AuthStatus status, string token, DateTime tokenExpireTime, string refreshToken, DateTime refreshTokenExpireTime, object data)
     {
         this.Status = (int)status;
         this.Message = "Success";
         this.Token = token;
         this.TokenExpiredTime = tokenExpireTime;
+        this.RefreshToken = refreshToken;
+        this.RefreshTokenExpiredTime = refreshTokenExpireTime;
         this.Data = data;
     }
 

@@ -110,7 +110,7 @@ public class PermissionRepository : SimpleCrudRepository<Permission, Guid>, IPer
     public async Task<User> GetUserWithRolesAndPermissionsAsync(Guid userId)
     {
         const string sql = """
-            SELECT a.id, a.email, a.school_id, a.active, a.created_at, a.updated_at,
+            SELECT a.id, a.email, a.school_id, a.active, a.created, a.updated,
                    r.id, r.name,
                    p.id, p.name
             FROM users a

@@ -32,7 +32,7 @@ public class OTPRepository : SimpleCrudRepository<Otps, Guid>, IOtpRepository
             )
             VALUES (@idV7, @userId, @resetCode, NOW(), NOW() + INTERVAL '5 minute', Now(), true)
         """;
-        var inserted = await _connection.ExecuteAsync(insertOtp, new { id = idV7, userId, resetCode });
+        var inserted = await _connection.ExecuteAsync(insertOtp, new { idV7, userId, resetCode });
         if (inserted <= 0) throw new BadRequestException("Failed to generate reset code.");
         return true;
     }

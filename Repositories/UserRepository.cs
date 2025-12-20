@@ -446,14 +446,14 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         if (isValidEmail == false)
             throw new BadRequestException("Invalid email");
         var existingEmail = """
-            SELECT id, name, email, password
+            SELECT id, name, email, password, last_login_time, last_otp_sent_at, failed_otp_attempts, lockout_end_at
             FROM users
             WHERE LOWER(email) = LOWER(@Email) AND active = true AND deleted = false;
         """;
         var user = await _connection.QuerySingleOrDefaultAsync<User>(existingEmail, new { Email = email });
 
         if (user == null)
-            throw new NotFoundException("User not found");
+            throw new NotFoundException("User not found or has been locked");
         return user;
     }
 

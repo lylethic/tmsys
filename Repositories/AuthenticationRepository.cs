@@ -9,12 +9,11 @@ using server.Application.Enums;
 using server.Application.Request;
 using server.Common.Interfaces;
 using server.Common.Models;
-using server.Common.Utils;
 using server.Domain.Entities;
-using server.Services.Templates;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace server.Repositories;
@@ -25,8 +24,6 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
     private readonly IMemoryCache _memoryCache;
     private readonly IMailService _gmailService;
     private readonly IUserRepository _userRepo;
-    private readonly IOtpRepository _otpRepo;
-    private readonly ILogManager _logger;
     private IConfiguration _config;
 
     public AuthenticationRepository(
@@ -35,8 +32,6 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
         IMemoryCache memoryCache,
         IMailService gmailService,
         IUserRepository userRepo,
-        IOtpRepository otpRepo,
-        ILogManager logger,
         IConfiguration configuration
     ) : base(connection)
     {
@@ -45,8 +40,6 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
         this._memoryCache = memoryCache;
         this._gmailService = gmailService;
         this._userRepo = userRepo;
-        this._otpRepo = otpRepo;
-        this._logger = logger;
         this._config = configuration;
     }
 
@@ -111,8 +104,12 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
             }
 
             var accessToken = GenerateAccessToken(claims);
-            // var tokenExpiredTime = DateTime.UtcNow.AddMonths((int)expiryMonths);
+            var refreshToken = GenerateRefreshToken();
             var tokenExpiredTime = DateTime.UtcNow.AddHours((int)expiryHours);
+
+            var refreshTokenExpiredTime = DateTime.UtcNow.AddMonths((int)refreshExpiryHours);
+            // Hash the refresh token before storing
+            var hashedRefreshToken = HashToken(refreshToken);
 
             var accessTokenCookieName = _config["Cookie:AccessTokenCookieName"];
             var accessTokenExpiryName = _config["Cookie:AccessTokenExpiryName"];
@@ -126,6 +123,7 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
             }
 
             SetJWTTokenCookie(accessTokenCookieName, accessTokenExpiryName, accessToken, tokenExpiredTime);
+            SetJWTTokenCookie(refreshTokenCookieName, refreshTokenExpiryName, accessToken, tokenExpiredTime);
 
             var loginUser = new LoginDto
             {
@@ -136,7 +134,7 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
             };
 
             // update last login time to users table
-            await _userRepo.UpdateLoginTime(user.Id, accessToken);
+            await _userRepo.UpdateLoginTime(user.Id, hashedRefreshToken);
 
             // commit
             transaction.Commit();
@@ -145,6 +143,8 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
                 AuthStatus.Success,
                 accessToken,
                 tokenExpiredTime,
+                refreshToken,
+                refreshTokenExpiredTime,
                 loginUser
             );
         }
@@ -153,62 +153,6 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
             transaction.Rollback();
             throw;
         }
-    }
-
-    public async Task<string> SendResetCode(string userEmail)
-    {
-        try
-        {
-            var user = await _userRepo.GetEmailAsync(userEmail);
-            if (user == null)
-                return "User not found";
-            else
-            {
-                var resetCode = ValidatorHepler.GenerateRandomNumberList(6);
-
-                var rows = await _otpRepo.AddAsync(user.Id, resetCode);
-                if (!rows)
-                    return "Failed to generate reset code.";
-
-                #region: Send Email reset code to user
-                string emailBody = await EmailTemplateManager.GetPasswordResetEmailAsync(userEmail, resetCode);
-                var subject = "Your Password Reset Code for Loopy";
-                var emailRequest = new SendEmailRequest(userEmail, subject, emailBody);
-                await _gmailService.SendEmailAsync(emailRequest);
-                #endregion
-
-                return "Reset code sent successfully. Please check your email.";
-            }
-        }
-        catch (Exception ex)
-        {
-            return $"Failed to send reset code: {ex.Message}";
-        }
-    }
-
-    public async Task<string> ConfirmResetPassword(ResetPasswordRequest request)
-    {
-        var user = await _connection.QuerySingleOrDefaultAsync<User>(
-            "SELECT id FROM users WHERE LOWER(email) = LOWER(@Email)",
-            new { Email = request.Email }
-        );
-
-        if (user == null)
-            return "User not found";
-
-        var existingOtp = await _otpRepo.GetOTPCodeAsync(request.Code, user.Id);
-        if (existingOtp != null)
-        {
-            var affected = await _userRepo.SetPassword(user.Id, request.NewPassword);
-
-            // mark otp as used
-            await _otpRepo.UpdateOTPAsync(existingOtp.Id);
-
-            if (affected)
-                return "Password has been reset successfully.";
-            return "Failed to update password.";
-        }
-        return "OTP expired or invalid.";
     }
 
     private string GenerateAccessToken(IEnumerable<Claim> claims)
@@ -279,6 +223,8 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
 
         var accessTokenCookieName = _config["Cookie:AccessTokenCookieName"];
         var accessTokenExpiryName = _config["Cookie:AccessTokenExpiryName"];
+        var refreshTokenCookieName = _config["Cookie:RefreshTokenCookieName"];
+        var refreshTokenExpiryName = _config["Cookie:RefreshTokenExpiryName"];
 
         if (!string.IsNullOrWhiteSpace(accessTokenCookieName))
         {
@@ -288,5 +234,94 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
         {
             _httpContextAccessor.HttpContext?.Response.Cookies.Delete(accessTokenExpiryName);
         }
+        if (!string.IsNullOrWhiteSpace(refreshTokenCookieName))
+        {
+            _httpContextAccessor.HttpContext?.Response.Cookies.Delete(refreshTokenCookieName);
+        }
+        if (!string.IsNullOrWhiteSpace(refreshTokenExpiryName))
+        {
+            _httpContextAccessor.HttpContext?.Response.Cookies.Delete(refreshTokenExpiryName);
+        }
     }
+
+    public async Task<AuthResponse> RevokeRefreshToken(string? refreshToken)
+    {
+        // prefer explicit token, otherwise fall back to cookie
+        var refreshTokenCookieName = _config["Cookie:RefreshTokenCookieName"];
+        var tokenToRevoke = !string.IsNullOrWhiteSpace(refreshToken)
+            ? refreshToken
+            : _httpContextAccessor.HttpContext?.Request.Cookies[refreshTokenCookieName ?? string.Empty];
+
+        if (string.IsNullOrWhiteSpace(tokenToRevoke))
+        {
+            return new AuthResponse(AuthStatus.BadRequest, "Refresh token is required");
+        }
+
+        var hashedToken = HashToken(tokenToRevoke);
+
+        var rows = await _connection.ExecuteAsync(
+            """
+                UPDATE users
+                SET token = NULL
+                WHERE token = @Token
+            """,
+            new { Token = hashedToken });
+
+        if (rows == 0)
+        {
+            return new AuthResponse(AuthStatus.Unauthorized, "Refresh token is invalid or already revoked");
+        }
+
+        ClearRefreshTokenCookies();
+        return new AuthResponse(AuthStatus.Success, "Refresh token revoked");
+    }
+
+    public async Task<bool> UpdateRemoveToken(string email)
+    {
+        var update = """
+            UPDATE public.users
+            SET token = NULL
+            WHERE email = @Email
+        """;
+        var affected = await _connection.ExecuteAsync(update, new { Email = email });
+        if (affected > 0)
+            return true;
+        return false;
+    }
+
+    #region Helper method generate token
+    private static string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[64];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
+    }
+
+    // Helper method to hash tokens before storing them
+    private static string HashToken(string token)
+    {
+        //The refresh token is hashed using SHA256 before storing it in the database to prevent token theft from compromising security.
+        using var sha256 = SHA256.Create();
+        var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(token));
+        return Convert.ToBase64String(hashedBytes);
+    }
+
+    private void ClearRefreshTokenCookies()
+    {
+        var refreshTokenCookieName = _config["Cookie:RefreshTokenCookieName"];
+        var refreshTokenExpiryName = _config["Cookie:RefreshTokenExpiryName"];
+
+        if (!string.IsNullOrWhiteSpace(refreshTokenCookieName))
+        {
+            _httpContextAccessor.HttpContext?.Response.Cookies.Delete(refreshTokenCookieName);
+        }
+        if (!string.IsNullOrWhiteSpace(refreshTokenExpiryName))
+        {
+            _httpContextAccessor.HttpContext?.Response.Cookies.Delete(refreshTokenExpiryName);
+        }
+    }
+    #endregion
 }
