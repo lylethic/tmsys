@@ -114,7 +114,6 @@ tms_server/
 
 - **.NET 8.0** - Primary framework
 - **ASP.NET Core Web API** - RESTful API
-- **Entity Framework Core 8.0** - ORM
 - **Dapper** - Micro ORM for high performance
 
 ### Database
@@ -126,7 +125,6 @@ tms_server/
 
 - **JWT (JSON Web Tokens)** - Authentication
 - **BCrypt.Net** - Password hashing
-- **ASP.NET Core Identity** - User management
 
 ### Real-time Communication
 
@@ -142,12 +140,6 @@ tms_server/
 
 - **CloudinaryDotNet** - Cloud media storage
 - **File System** - Local file storage
-
-### Reporting & Export
-
-- **ClosedXML** - Excel generation
-- **ExcelDataReader** - Excel reading
-- **PdfPig** - PDF processing
 
 ### Utilities
 
@@ -181,40 +173,9 @@ cd tms_server
 
 Create a `.env` or `.env.development` file:
 
-```env
-# Database
-DB_NAME=tms_database
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_PORT=5432
-
-# Application
-ENVIRONMENT=Development
-WEB_PORT=5000
-
-# JWT
-JWT_SECRET_KEY=your_secret_key_here
-JWT_ISSUER=http://localhost:5000
-JWT_AUDIENCE=http://localhost:5000
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# OpenAI
-OPENAI_API_KEY=your_openai_api_key
-```
-
 ### 3️⃣ Run Locally (Development)
 
 ```bash
-# Restore packages
-dotnet restore
-
-# Apply migrations
-dotnet ef database update
-
 # Run with HTTP
 dotnet watch run
 # or
@@ -223,17 +184,6 @@ dotnet run --environment "Development"
 # Run with HTTPS
 dotnet run --launch-profile https
 ```
-
-### 4️⃣ Access
-
-- **API (HTTP)**: http://localhost:5000/tms/api
-- **API (HTTPS)**: https://localhost:5001/tms/api
-- **Swagger UI (HTTP)**: http://localhost:5000/tms/api/swagger
-- **Swagger UI (HTTPS)**: https://localhost:5001/tms/api/swagger
-- **Hangfire Dashboard**: http://localhost:5000/tms/hangfire
-- **SignalR Test**: http://localhost:5000/tms/api/test-client.html
-
----
 
 ## 📊 Database Management
 
@@ -351,17 +301,6 @@ Open the browser and visit:
 ## 📝 Logging
 
 The system uses **log4net** for logging. Configuration is in `log4net.config`.
-
-```csharp
-// Usage example
-private readonly ILogManager _logger;
-
-_logger.LogInfo("Information message");
-_logger.LogWarning("Warning message");
-_logger.LogError("Error message", exception);
-```
-
----
 
 ## 🔒 Security Features
 
