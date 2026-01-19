@@ -29,11 +29,11 @@ namespace server.Controllers.v1
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateDepartment([FromBody] UpSertDepartment dto)
+        public async Task<IActionResult> CreateDepartment([FromBody] List<UpSertDepartment> dto)
         {
             try
             {
-                var mapped = _mapper.Map<Department>(dto);
+                var mapped = _mapper.Map<List<Department>>(dto);
                 var result = await _repo.AddAsync(mapped);
                 return Success(result);
             }

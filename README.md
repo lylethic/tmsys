@@ -358,8 +358,8 @@ This project is licensed under the MIT License.
 
 ## 📞 Contact
 
-- **Repository**: [https://github.com/lyle975/tms_server](https://github.com/lyle975/tms_server)
-- **Issues**: [https://github.com/lyle975/tms_server/issues](https://github.com/lyle975/tms_server/issues)
+- **Repository**: [https://github.com/lylethic/tmsys](https://github.com/lylethic/tmsys)
+- **Issues**: [https://github.com/lylethic/tmsys/issues](https://github.com/lylethic/tmsys/issues)
 
 ---
 
