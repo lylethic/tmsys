@@ -1,4 +1,6 @@
 using System;
+using System.Text.Json.Serialization;
+using server.Common.Json;
 
 namespace server.Application.DTOs;
 
@@ -9,6 +11,12 @@ public class WorkScheduleDto
     public string? Intern_email { get; set; }
 
     public string? Mentor_email { get; set; }
+
+    [JsonConverter(typeof(DateOnlyDateTimeOffsetConverter))]
+    public DateTimeOffset? Week_start { get; set; }
+
+    [JsonConverter(typeof(DateOnlyDateTimeOffsetConverter))]
+    public DateTimeOffset? Week_end { get; set; }
 
     public string? Monday { get; set; }
 

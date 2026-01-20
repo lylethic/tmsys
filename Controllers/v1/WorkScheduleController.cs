@@ -40,6 +40,20 @@ public class WorkScheduleController : BaseApiController
         }
     }
 
+    [HttpGet("mentees")]
+    public async Task<IActionResult> GetMentees([FromQuery] string mentorEmail, [FromQuery] DateTimeOffset? weekStart, [FromQuery] DateTimeOffset? weekEnd)
+    {
+        try
+        {
+            var result = await _workScheduleRepo.GetMenteesByMentorEmailAsync(mentorEmail, weekStart, weekEnd);
+            return Success(result);
+        }
+        catch (Exception ex)
+        {
+            return Error(ex.Message);
+        }
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {

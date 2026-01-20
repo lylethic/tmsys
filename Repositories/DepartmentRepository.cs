@@ -149,12 +149,18 @@ namespace server.Repositories
         {
             var sql = $"""
                 WITH RECURSIVE dept_tree AS (
-                    SELECT * FROM {_dbTableName} WHERE id = ANY(@RootIds)
+                    SELECT *, ARRAY[id] AS path
+                    FROM {_dbTableName}
+                    WHERE id = ANY(@RootIds) AND deleted = false
                     UNION ALL
-                    SELECT d.* FROM {_dbTableName} d
+                    SELECT d.*, dt.path || d.id
+                    FROM {_dbTableName} d
                     INNER JOIN dept_tree dt ON d.parent_id = dt.id
+                    WHERE d.deleted = false
+                      AND NOT d.id = ANY(dt.path)
                 )
-                SELECT * FROM dept_tree;
+                SELECT *
+                FROM dept_tree;
             """;
 
             var result = await _connection.QueryAsync<Department>(sql, new { RootIds = rootIds.ToArray() });
@@ -163,26 +169,35 @@ namespace server.Repositories
 
         private static List<DepartmentTreeDto> BuildDepartmentTree(List<Department> departments, List<Guid> rootIds)
         {
-            var map = departments.ToDictionary(
-                d => d.Id,
-                d => new DepartmentTreeDto
-                {
-                    Id = d.Id,
-                    Code = d.Code,
-                    Name = d.Name,
-                    Description = d.Description,
-                    Parent_id = d.Parent_id,
-                    Active = d.Active,
-                    Deleted = d.Deleted,
-                    Created = d.Created,
-                    Updated = d.Updated,
-                    Created_by = d.Created_by,
-                    Updated_by = d.Updated_by
-                });
+            var map = departments
+                .GroupBy(d => d.Id)
+                .Select(g => g.First())
+                .ToDictionary(
+                    d => d.Id,
+                    d => new DepartmentTreeDto
+                    {
+                        Id = d.Id,
+                        Code = d.Code,
+                        Name = d.Name,
+                        Description = d.Description,
+                        Parent_id = d.Parent_id,
+                        Active = d.Active,
+                        Deleted = d.Deleted,
+                        Created = d.Created,
+                        Updated = d.Updated,
+                        Created_by = d.Created_by,
+                        Updated_by = d.Updated_by
+                    });
 
             foreach (var node in map.Values)
             {
-                if (node.Parent_id.HasValue && map.TryGetValue(node.Parent_id.Value, out var parent))
+                if (!node.Parent_id.HasValue)
+                    continue;
+
+                if (node.Parent_id.Value == node.Id)
+                    continue;
+
+                if (map.TryGetValue(node.Parent_id.Value, out var parent))
                 {
                     parent.Children.Add(node);
                 }
@@ -191,8 +206,20 @@ namespace server.Repositories
             var roots = new List<DepartmentTreeDto>();
             foreach (var rootId in rootIds)
             {
-                if (map.TryGetValue(rootId, out var rootNode))
-                    roots.Add(rootNode);
+                if (!map.TryGetValue(rootId, out var rootNode))
+                    continue;
+
+                if (rootNode.Parent_id.HasValue &&
+                    rootNode.Parent_id.Value != rootNode.Id &&
+                    map.ContainsKey(rootNode.Parent_id.Value))
+                {
+                    continue;
+                }
+
+                if (roots.Any(r => r.Id == rootNode.Id))
+                    continue;
+
+                roots.Add(rootNode);
             }
 
             return roots;

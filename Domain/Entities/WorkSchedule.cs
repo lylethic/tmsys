@@ -13,6 +13,10 @@ public partial class Work_schedule : SystemLogEntity<Guid>
 
     public string? Mentor_email { get; set; }
 
+    public DateTimeOffset? Week_start { get; set; }
+
+    public DateTimeOffset? Week_end { get; set; }
+
     public string? Monday { get; set; }
 
     public string? Tuesday { get; set; }
