@@ -12,6 +12,7 @@ using server.Common.Interfaces;
 using server.Common.Settings;
 using server.Domain.Entities;
 using server.Repositories;
+using server.Services;
 
 namespace server.Controllers.v1;
 
@@ -22,17 +23,20 @@ public class AuthsController : BaseApiController
     private readonly IAuth _auth;
     private readonly IUserRepository _userRepo;
     private readonly SeedDataService _seedDataService;
+    private readonly IAssistantService _assistantService;
     public AuthsController(
         IServiceProvider serviceProvider,
         IMapper mapper,
         IHttpContextAccessor httpContextAccessor,
         IAuth auth, IUserRepository userRepo,
+        IAssistantService assistantService,
         ILogManager loggerManager
     ) : base(mapper, httpContextAccessor, loggerManager)
     {
         _auth = auth;
         _userRepo = userRepo;
         this._seedDataService = serviceProvider.GetRequiredService<SeedDataService>();
+        _assistantService = assistantService;
     }
 
     /// <summary>
@@ -210,6 +214,42 @@ public class AuthsController : BaseApiController
         {
             await _auth.Logout();
             return Success("Logged out successfully.");
+        }
+        catch (Exception ex)
+        {
+            return Error(ex.Message);
+        }
+    }
+
+    [HttpGet("getMyInfo")]
+    public async Task<IActionResult> GetMyInfo()
+    {
+        try
+        {
+            var userId = Guid.Parse(_assistantService.UserId);
+            var user = await _userRepo.GetByIdAsync(userId);
+            var rolesAndPermissions = await _userRepo.GetUserRolesAndPermissionsAsync(userId);
+
+            var userInfo = new
+            {
+                user.Id,
+                user.Username,
+                user.Name,
+                user.Email,
+                user.ProfilePic,
+                user.City,
+                user.Active,
+                user.Created,
+                user.Updated,
+                user.Last_login_time
+            };
+
+            return Success(new
+            {
+                User = userInfo,
+                Roles = rolesAndPermissions.Roles,
+                Permissions = rolesAndPermissions.Permissions
+            });
         }
         catch (Exception ex)
         {

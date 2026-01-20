@@ -32,7 +32,7 @@ public class TasksController : BaseApiController
     }
 
     [HttpGet]
-    [RequirePermission("READ", "AM_READ")]
+    // [RequirePermission("READ", "AM_READ")]
     public async Task<IActionResult> GetAll([FromQuery] PaginationRequest request)
     {
         try

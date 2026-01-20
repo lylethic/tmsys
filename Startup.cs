@@ -79,7 +79,7 @@ public class Startup
         EmailTemplateManager.Initialize(env);
 
         // Base Path Configuration
-        app.UsePathBase("/tms/api");
+        app.UsePathBase("/taskhub/api");
 
         // Development Environment
         if (app.Environment.IsDevelopment())
@@ -186,7 +186,7 @@ public class Startup
         {
             c.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
             {
-                var serverUrl = $"{httpReq.Scheme}://{httpReq.Host.Value}/tms/api";
+                var serverUrl = $"{httpReq.Scheme}://{httpReq.Host.Value}/taskhub/api";
                 swaggerDoc.Servers =
                 [
                     new OpenApiServer { Url = serverUrl, Description = "Current Server" }
@@ -203,7 +203,7 @@ public class Startup
 
     public void ConfigureHangfireJobs(WebApplication app)
     {
-        app.UseHangfireDashboard("/tms/hangfire");
+        app.UseHangfireDashboard("/taskhub/hangfire");
 
         using var scope = app.Services.CreateScope();
         var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
