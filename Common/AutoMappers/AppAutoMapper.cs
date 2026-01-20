@@ -68,5 +68,17 @@ public class AppAutoMapper : Profile
         CreateMap<UpSertDepartment, Department>();
 
         CreateMap<UpSertUserDepartment, UserDepartment>();
+
+        //
+        CreateMap<PopupDto, Popup>();
+
+        CreateMap<WorkScheduleDto, Work_schedule>();
+
+        // Company geofence
+        CreateMap<CompanyGeofenceUpsert, CompanyGeofence>()
+            .ForMember(dest => dest.Center_lat, opt => opt.MapFrom(src => src.CenterLat))
+            .ForMember(dest => dest.Center_lng, opt => opt.MapFrom(src => src.CenterLng))
+            .ForMember(dest => dest.Radius_m, opt => opt.MapFrom(src => src.RadiusM))
+            .ForMember(dest => dest.Active, opt => opt.MapFrom(src => src.Active));
     }
 }
