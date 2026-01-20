@@ -5,7 +5,7 @@ namespace server.Common.CoreConstans;
 
 public static class CoreConstants
 {
-    public const string Prefix = "tms"; // URL prefix
+    public const string Prefix = "taskhub"; // URL prefix
     public const string UploadFolder = "Upload"; // Upload subfolder
     public const string ROOTFOLDER = "wwwroot";
     public const string FOLDERCLOUDINARY = "public";

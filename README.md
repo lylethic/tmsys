@@ -1,4 +1,4 @@
-# 🚀 TMS - Task Management System
+# 🚀 TaskHub - Task Management System
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)](https://www.postgresql.org/)
@@ -6,7 +6,7 @@
 
 ## 📋 Introduction
 
-**TMS (Task Management System)** is a professional internal task management system for IT teams. It is built on **.NET 8.0** with **Clean Architecture** to ensure scalability, maintainability, and high performance.
+**TaskHub (Task Management System)** is a professional internal task management system for IT teams. It is built on **.NET 8.0** with **Clean Architecture** to ensure scalability, maintainability, and high performance.
 
 ### ✨ Key Features
 
@@ -56,6 +56,18 @@
 - **Scheduled Tasks**: Automate recurring jobs
 - **Job Dashboard**: Monitor jobs via UI
 
+#### 🗓️ Work Schedules
+
+- **Weekly Work Schedule**: Define intern schedules by week (start/end)
+- **Mentor–Mentee Mapping**: Assign mentors and list mentees by mentor email
+- **Schedule Tracking**: Store daily availability (Mon–Fri)
+
+#### 📍 Attendance & Check-in
+
+- **Company Geofence**: Configure company location radius
+- **Check-in Validation**: Verify distance to company area
+- **Daily Check-in**: Prevent duplicate check-ins per day
+
 ---
 
 ## 🏗️ System Architecture
@@ -63,7 +75,7 @@
 ### Clean Architecture Structure
 
 ```
-tms_server/
+taskhub_server/
 ├── 📁 Application/              # Business Logic Layer
 │   ├── DTOs/                    # Data Transfer Objects
 │   ├── Models/                  # View Models
@@ -165,8 +177,7 @@ tms_server/
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/lyle975/tms_server.git
-cd tms_server
+git clone https://github.com/lylethic/tmsys.git
 ```
 
 ### 2️⃣ Configure Environment Variables
@@ -260,6 +271,27 @@ GET    /api/v1/statistics/overview   # Overview statistics
 GET    /api/v1/statistics/tasks      # Task statistics
 ```
 
+### Work Schedules
+
+```
+GET    /api/v1/workSchedules         # List schedules (pagination)
+POST   /api/v1/workSchedules         # Create schedule
+PUT    /api/v1/workSchedules/{id}    # Update schedule
+DELETE /api/v1/workSchedules/{id}    # Delete schedule
+GET    /api/v1/workSchedules/mentees # List mentees by mentorEmail (+ week filters)
+```
+
+### Attendance & Check-in
+
+```
+POST   /api/v1/attendance/checkins                 # Check in
+GET    /api/v1/attendance/checkins/validate-location # Validate location vs geofence
+GET    /api/v1/company-geofences/active            # Get active company geofence
+POST   /api/v1/company-geofences                   # Create geofence
+PUT    /api/v1/company-geofences/{id}              # Update geofence
+DELETE /api/v1/company-geofences/{id}              # Delete geofence
+```
+
 _See full list in Swagger UI_
 
 ---
@@ -271,7 +303,7 @@ _See full list in Swagger UI_
 ```javascript
 // Connect
 const connection = new signalR.HubConnectionBuilder()
-  .withUrl('http://localhost:5000/tms/api/hubs/notifications')
+  .withUrl('http://localhost:5000/taskhub/api/hubs/notifications')
   .build();
 
 // Start connection
@@ -293,8 +325,8 @@ await connection.invoke('BroadcastMessage', message);
 
 Open the browser and visit:
 
-- http://localhost:5000/tms/api/test-client.html
-- http://localhost:5000/tms/api/chat.html
+- http://localhost:5000/taskhub/api/test-client.html
+- http://localhost:5000/taskhub/api/chat.html
 
 ---
 
