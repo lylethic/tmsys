@@ -65,6 +65,10 @@ public static class ServiceCollectionExtension
         services.AddTransient<IDepartment, DepartmentRepository>();
         services.AddTransient<IUserDepartment, UserDepartmentRepository>();
         services.AddTransient<IOtpService, OtpService>();
+        services.AddTransient<IWorkSchedule, WorkScheduleRepository>();
+        services.AddTransient<IPopup, PopupRepository>();
+        services.AddTransient<IAttendanceService, AttendanceCheckinRepository>();
+        services.AddTransient<ICompanyGeofence, CompanyGeofenceRepository>();
 
         // Hangfire
         services.AddTransient<IJobRunService, JobRunService>();

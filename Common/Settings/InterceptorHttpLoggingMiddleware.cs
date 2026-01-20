@@ -15,7 +15,7 @@ namespace server.Common.Settings
         {
             var path = context.Request.Path.ToString();
             // Bỏ qua log cho Hangfire
-            if (path.StartsWith("/tms/hangfire"))
+            if (path.StartsWith("/taskhub/hangfire"))
             {
                 await _next(context);
                 return;
