@@ -23,7 +23,7 @@ public static class NotificationStatusCodes
         {
             new Approved_status
             {
-                Id = Status.PendingNotification,
+                id = Status.PendingNotification,
                 name = "Pending",
                 code = "NOTI_PENDING",
                 color = "#f0ad4e",
@@ -33,7 +33,7 @@ public static class NotificationStatusCodes
             },
             new Approved_status
             {
-                Id = Status.SentNotification,
+                id = Status.SentNotification,
                 name = "Sent",
                 code = "NOTI_SENT",
                 color = "#5cb85c",
@@ -43,7 +43,7 @@ public static class NotificationStatusCodes
             },
             new Approved_status
             {
-                Id = Status.ReadNotification,
+                id = Status.ReadNotification,
                 name = "Read",
                 code = "NOTI_READ",
                 color = "#0275d8",
@@ -53,7 +53,7 @@ public static class NotificationStatusCodes
             },
             new Approved_status
             {
-                Id = Status.FailedNotification,
+                id = Status.FailedNotification,
                 name = "Failed",
                 code = "NOTI_FAILED",
                 color = "#d9534f",

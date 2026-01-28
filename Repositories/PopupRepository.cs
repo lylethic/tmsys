@@ -1,3 +1,4 @@
+using System;
 using System.Data;
 using Dapper;
 using Medo;
@@ -74,12 +75,6 @@ public class PopupRepository : SimpleCrudRepository<Popup, Guid>, IPopup
                 param.Add("Display_to", request.Display_to.Value);
             }
 
-            if (request.Is_active.HasValue)
-            {
-                where.Add("is_active = @Is_active");
-                param.Add("Is_active", request.Is_active.Value);
-            }
-
             var orderDirection = request.Ascending ? "ASC" : "DESC";
 
             return await GetListByIdCursorNoDeleleColAsync<Popup>(
@@ -103,8 +98,7 @@ public class PopupRepository : SimpleCrudRepository<Popup, Guid>, IPopup
             throw new BadRequestException("Please provide popup details");
         if (entity.Content is null)
             throw new BadRequestException("Please provide a valid popup content.");
-
-        entity.Is_active = true;
+        entity.Id = Uuid7.NewUuid7().ToGuid();
         entity.Created_by = Guid.Parse(_assistantService.UserId);
         var sql = """
             INSERT INTO popups (id, content, validity_start, validity_end, type, created, updated, display_from, display_to)
@@ -112,7 +106,20 @@ public class PopupRepository : SimpleCrudRepository<Popup, Guid>, IPopup
         """;
         try
         {
-            var inserted = await _connection.ExecuteAsync(sql, entity);
+            var parameters = new
+            {
+                entity.Id,
+                entity.Content,
+                entity.Validity_start,
+                entity.Validity_end,
+                entity.Type,
+                Created_at = entity.Created,
+                Updated_at = entity.Updated,
+                entity.Display_from,
+                entity.Display_to
+            };
+
+            var inserted = await _connection.ExecuteAsync(sql, parameters);
             if (inserted > 0)
             {
                 var result = await this.GetByIdAsync(entity.Id);
@@ -167,7 +174,19 @@ public class PopupRepository : SimpleCrudRepository<Popup, Guid>, IPopup
                 WHERE id = @Id;
             """;
 
-            var result = await _connection.ExecuteAsync(sql, entity);
+            var parameters = new
+            {
+                entity.Id,
+                entity.Content,
+                entity.Validity_start,
+                entity.Validity_end,
+                entity.Type,
+                Updated = entity.Updated,
+                entity.Display_from,
+                entity.Display_to
+            };
+
+            var result = await _connection.ExecuteAsync(sql, parameters);
             if (result > 0)
                 return true;
             throw new BadRequestException("Failed to update popup.");

@@ -80,5 +80,9 @@ public class AppAutoMapper : Profile
             .ForMember(dest => dest.Center_lng, opt => opt.MapFrom(src => src.CenterLng))
             .ForMember(dest => dest.Radius_m, opt => opt.MapFrom(src => src.RadiusM))
             .ForMember(dest => dest.Active, opt => opt.MapFrom(src => src.Active));
+
+        CreateMap<SubmissionDto, Submission>();
+        CreateMap<SubmissionCreate, Submission>();
+        CreateMap<SubmissionUpdate, Submission>();
     }
 }

@@ -1,8 +1,10 @@
 using System.Data;
 using Dapper;
 using Medo;
+using Microsoft.CodeAnalysis.Elfie.Serialization;
 using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
+using server.Application.Models;
 using server.Application.Request;
 using server.Common.Exceptions;
 using server.Domain.Entities;
@@ -12,16 +14,19 @@ namespace server.Repositories;
 
 public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
 {
-    private readonly IProjectRepository _projectrepository;
+    private readonly IProjectRepository _projectRepo;
     private readonly IUserRepository _userRepository;
     private readonly IAssistantService _assistantService;
 
-    public TaskRepository(IDbConnection connection, IUserRepository userRepository, IAssistantService assistantService, IProjectRepository projectrepository) : base(connection)
+    public TaskRepository(IDbConnection connection,
+    IUserRepository userRepository,
+    IAssistantService assistantService,
+    IProjectRepository projectrepository) : base(connection)
     {
         _connection = connection;
         _userRepository = userRepository;
         _assistantService = assistantService;
-        _projectrepository = projectrepository;
+        _projectRepo = projectrepository;
     }
 
     public async Task<Tasks> AddAsync(Tasks entity)
@@ -29,7 +34,7 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
         if (entity == null)
             throw new BadRequestException("Please provide task details.");
 
-        var existingProjectId = await _projectrepository.GetByIdAsync(entity.Project_id);
+        var existingProjectId = await _projectRepo.GetByIdAsync(entity.Project_id);
         if (existingProjectId == null)
             throw new NotFoundException($"Project with ID '{entity.Project_id}' does not exist.");
 
@@ -46,14 +51,26 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
                 due_date, priority, created, updated, created_by, updated_by, 
                 deleted, active,
                 update_frequency_days, 
-                last_progress_update
+                last_progress_update,
+                max_point,
+                late_penalty,
+                allow_late,
+                allow_resubmit,
+                pass_point,
+                completed_at
             ) 
             VALUES (
                 @Id, @Project_id, @Name, @Description, @Assigned_to, @Status, 
                 @Due_date, @Priority, @Created, @Updated, @Created_by, @Updated_by, 
                 @Deleted, @Active,
                 @Update_frequency_days, 
-                @Last_progress_update
+                @Last_progress_update,
+                @Max_point,
+                @Late_penalty,
+                @Allow_late,
+                @Allow_resubmit,
+                @Pass_point,
+                @Completed_at
             )
         """;
 
@@ -155,6 +172,61 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
         return result;
     }
 
+    public async Task<TaskModel> GetDetailTaskAsync(Guid id)
+    {
+        var sql = """
+            SELECT * FROM tasks
+            WHERE id = @Id AND deleted = false
+        """;
+
+        var taskResult = await _connection.QuerySingleOrDefaultAsync<Tasks>(sql, new { Id = id })
+            ?? throw new NotFoundException("Task not found");
+
+        var extendProject = await _projectRepo.GetByIdAsync(taskResult.Project_id);
+        var extendUser = await _userRepository.GetByIdAsync(taskResult.Assigned_to);
+
+        var result = new TaskModel()
+        {
+            Id = taskResult.Id,
+            Project_id = taskResult.Project_id,
+            Name = taskResult.Name,
+            Description = taskResult.Description,
+            Assigned_to = taskResult.Assigned_to,
+            Status = taskResult.Status,
+            Due_date = taskResult.Due_date,
+            Priority = taskResult.Priority,
+            Update_frequency_days = taskResult.Update_frequency_days,
+            Last_progress_update = taskResult.Last_progress_update,
+            Max_point = taskResult.Max_point,
+            Late_penalty = taskResult.Late_penalty,
+            Allow_late = taskResult.Allow_late,
+            Allow_resubmit = taskResult.Allow_resubmit,
+            Pass_point = taskResult.Pass_point,
+            Completed_at = taskResult.Completed_at,
+            Created = taskResult.Created,
+            Updated = taskResult.Updated,
+            Created_by = taskResult.Created_by,
+            Updated_by = taskResult.Updated_by,
+            Deleted = taskResult.Deleted,
+            Active = taskResult.Active,
+            Extend_project = new
+            {
+                name = extendProject.Name,
+                description = extendProject.Description,
+                start_date = extendProject.Start_date,
+                end_date = extendProject.End_date,
+                status = extendProject.Status,
+                project_type = extendProject.Project_type
+            },
+            Extend_user = new
+            {
+                name = extendUser.Name,
+                profilepic = extendUser.ProfilePic
+            }
+        };
+        return result;
+    }
+
     public async Task<bool> UpdateItemAsync(Guid id, Tasks entity)
     {
         try
@@ -164,7 +236,7 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
 
             entity.Id = id;
 
-            var existingProjectId = await _projectrepository.GetByIdAsync(entity.Project_id);
+            var existingProjectId = await _projectRepo.GetByIdAsync(entity.Project_id);
             if (existingProjectId == null)
                 throw new NotFoundException($"Project with ID '{entity.Project_id}' does not exist.");
 
@@ -186,7 +258,13 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
                     updated = @Updated, 
                     updated_by = @Updated_by,
                     update_frequency_days = @Update_frequency_days,  
-                    last_progress_update = @Last_progress_update
+                    last_progress_update = @Last_progress_update,
+                    max_point = @Max_point,
+                    late_penalty = @Late_penalty,
+                    allow_late = @Allow_late,
+                    allow_resubmit = @Allow_resubmit,
+                    pass_point = @Pass_point,
+                    completed_at = @Completed_at
                 WHERE id = @Id AND deleted = false
             """;
 

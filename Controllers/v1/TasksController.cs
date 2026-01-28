@@ -47,12 +47,26 @@ public class TasksController : BaseApiController
     }
 
     [HttpGet("{id}")]
-    [RequirePermission("READ", "AM_READ")]
+    // [RequirePermission("READ", "AM_READ")]
     public async Task<IActionResult> GetById(Guid id)
     {
         try
         {
             var result = await _taskRepo.GetByIdAsync(id);
+            return Success(result);
+        }
+        catch (Exception ex)
+        {
+            return Error(ex.Message);
+        }
+    }
+
+    [HttpGet("taskDetail")]
+    public async Task<IActionResult> GetDetailTask(Guid id)
+    {
+        try
+        {
+            var result = await _taskRepo.GetDetailTaskAsync(id);
             return Success(result);
         }
         catch (Exception ex)

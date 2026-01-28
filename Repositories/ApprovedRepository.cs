@@ -23,16 +23,7 @@ public class ApprovedRepository : SimpleCrudRepository<Approved_status, Guid>, I
     {
         try
         {
-            entity.Id = Uuid7.NewUuid7().ToGuid();
-            if (entity.sort_order < 0)
-                throw new BadRequestException("This sort order must be greater than zero");
-
-            if (entity.sort_order.HasValue)
-            {
-                var check = await CheckingOrderNumberInType(entity.type!, entity.sort_order.Value);
-                if (check)
-                    throw new BadRequestException("This sort order already exists in this type");
-            }
+            entity.id = Uuid7.NewUuid7().ToGuid();
             await CreateAsync(entity);
             return entity;
         }
@@ -41,12 +32,11 @@ public class ApprovedRepository : SimpleCrudRepository<Approved_status, Guid>, I
             _logger.Error("Failed to add approved_status", ex);
             throw;
         }
-
     }
 
     public async Task DeleteItemAsync(Guid approvedStatusId)
     {
-        var entity = new Approved_status { Id = approvedStatusId };
+        var entity = new Approved_status { id = approvedStatusId };
         await DeleteAsync(entity);
     }
 
