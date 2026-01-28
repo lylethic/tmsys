@@ -10,7 +10,7 @@ public interface ISubmissionRepository
 {
     Task<Submission> AddAsync(Submission entity);
     Task<bool> DeleteItemAsync(Guid id);
-    Task<CursorPaginatedResult<Submission>> GetSubmissionPageAsync(SubmissionSearch request);
+    Task<CursorPaginatedResult<SubmissionModel>> GetSubmissionPageAsync(SubmissionSearch request);
     Task<Submission> GetByIdAsync(Guid id);
     Task<bool> UpdateItemAsync(Guid id, Submission entity);
     Task<SubmissionModel> GetSubmissionAsync(Guid id);
