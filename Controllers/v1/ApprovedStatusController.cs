@@ -60,7 +60,6 @@ namespace server.Controllers.v1
             }
         }
 
-        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> CreateAsync(UpSertApprovedStatus request)
         {
@@ -76,7 +75,6 @@ namespace server.Controllers.v1
             }
         }
 
-        [AllowAnonymous]
         [HttpDelete("{approvedStatusId}")]
         public async Task<IActionResult> Delete(Guid approvedStatusId)
         {
@@ -91,7 +89,6 @@ namespace server.Controllers.v1
             }
         }
 
-        [AllowAnonymous]
         [HttpPatch]
         public async Task<IActionResult> Put(UpSertApprovedStatus item)
         {

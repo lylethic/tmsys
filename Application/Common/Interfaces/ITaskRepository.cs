@@ -1,4 +1,5 @@
 using System;
+using server.Application.Models;
 using server.Application.Request;
 using server.Domain.Entities;
 
@@ -11,4 +12,5 @@ public interface ITaskRepository
     Task<PaginatedResult<Tasks>> GetAllAsync(PaginationRequest request);
     Task<Tasks> GetByIdAsync(Guid id);
     Task<bool> UpdateItemAsync(Guid id, Tasks entity);
+    Task<TaskModel> GetDetailTaskAsync(Guid id);
 }

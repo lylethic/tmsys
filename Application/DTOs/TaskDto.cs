@@ -28,6 +28,12 @@ public class TaskCreate : DomainCreate
     public int? Priority { get; set; }
     public int Update_frequency_days { get; set; }
     public DateTime Last_progress_update { get; set; }
+    public decimal? Max_point { get; set; }
+    public decimal? Late_penalty { get; set; }
+    public bool? Allow_late { get; set; }
+    public bool? Allow_resubmit { get; set; }
+    public decimal? Pass_point { get; set; }
+    public DateTime? Completed_at { get; set; }
 }
 
 public class TaskUpdate : DomainUpdate
@@ -41,5 +47,11 @@ public class TaskUpdate : DomainUpdate
     public int Priority { get; set; }
     public int Update_frequency_days { get; set; }
     public DateTime Last_progress_update { get; set; }
+    public decimal? Max_point { get; set; }
+    public decimal? Late_penalty { get; set; }
+    public bool? Allow_late { get; set; }
+    public bool? Allow_resubmit { get; set; }
+    public decimal? Pass_point { get; set; }
+    public DateTime? Completed_at { get; set; }
 }
 

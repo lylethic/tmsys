@@ -22,4 +22,16 @@ public partial class Tasks : SystemLogEntity<Guid>
     public int? Priority { get; set; }
     public int Update_frequency_days { get; set; } // Số ngày tối đa giữa các lần cập nhật tiến độ (mặc định là 7 ngày)
     public DateTime Last_progress_update { get; set; } // Lần cập nhật tiến độ cuối cùng
+
+    public decimal? Max_point { get; set; }
+
+    public decimal? Late_penalty { get; set; }
+
+    public bool? Allow_late { get; set; }
+
+    public bool? Allow_resubmit { get; set; }
+
+    public decimal? Pass_point { get; set; }
+
+    public DateTime? Completed_at { get; set; }
 }
