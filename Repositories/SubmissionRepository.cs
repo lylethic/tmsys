@@ -110,7 +110,7 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
         }
     }
 
-    public async Task<CursorPaginatedResult<Submission>> GetSubmissionPageAsync(SubmissionSearch request)
+    public async Task<CursorPaginatedResult<SubmissionModel>> GetSubmissionPageAsync(SubmissionSearch request)
     {
         try
         {
@@ -173,7 +173,7 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
 
             var orderDirection = request.Ascending ? "ASC" : "DESC";
 
-            return await GetListByIdCursorNoDeleleColAsync<Submission>(
+            var page = await GetListByIdCursorNoDeleleColAsync<Submission>(
                 request: request,
                 extraWhere: string.Join(" AND ", where),
                 extraParams: param,
@@ -181,6 +181,39 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
                 orderDirection: orderDirection,
                 idColumn: "id"
             );
+
+            var result = new CursorPaginatedResult<SubmissionModel>
+            {
+                NextCursor = page.NextCursor,
+                NextCursorSortOrder = page.NextCursorSortOrder,
+                HasNextPage = page.HasNextPage,
+                Total = page.Total
+            };
+
+            if (page.Data.Count == 0)
+                return result;
+
+            var taskCache = new Dictionary<Guid, Tasks>();
+            var userCache = new Dictionary<Guid, User>();
+
+            foreach (var submission in page.Data)
+            {
+                if (!taskCache.TryGetValue(submission.Task_id, out var task))
+                {
+                    task = await _taskRepository.GetByIdAsync(submission.Task_id);
+                    taskCache[submission.Task_id] = task;
+                }
+
+                if (!userCache.TryGetValue(submission.User_id, out var user))
+                {
+                    user = await _userRepository.GetByIdAsync(submission.User_id);
+                    userCache[submission.User_id] = user;
+                }
+
+                result.Data.Add(MapToSubmissionModel(submission, task, user));
+            }
+
+            return result;
         }
         catch (Exception ex)
         {
@@ -544,4 +577,52 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
             throw new InternalErrorException(ex.Message);
         }
     }
+
+    private static SubmissionModel MapToSubmissionModel(Submission submissionResult, Tasks extendTask, User extendUser)
+    {
+        return new SubmissionModel
+        {
+            Id = submissionResult.Id,
+            Task_id = submissionResult.Task_id,
+            User_id = submissionResult.User_id,
+            Submitted_at = submissionResult.Submitted_at,
+            Is_late = submissionResult.Is_late,
+            Raw_point = submissionResult.Raw_point,
+            Penalty_point = submissionResult.Penalty_point,
+            Final_score = submissionResult.Final_score,
+            Status = submissionResult.Status,
+            Note = submissionResult.Note,
+            Attempt_no = submissionResult.Attempt_no,
+            Is_pass = submissionResult.Is_pass,
+            Approved_status_id = submissionResult.Approved_status_id,
+            Created = submissionResult.Created,
+            Updated = submissionResult.Updated,
+            Created_by = submissionResult.Created_by,
+            Updated_by = submissionResult.Updated_by,
+            Deleted = submissionResult.Deleted,
+            Active = submissionResult.Active,
+            Extend_task = new
+            {
+                name = extendTask.Name,
+                description = extendTask.Description,
+                status = extendTask.Status,
+                due_date = extendTask.Due_date,
+                priority = extendTask.Priority,
+                update_frequency_days = extendTask.Update_frequency_days,
+                last_progress_update = extendTask.Last_progress_update,
+                max_point = extendTask.Max_point,
+                late_penalty = extendTask.Late_penalty,
+                allow_late = extendTask.Allow_late,
+                allow_resubmit = extendTask.Allow_resubmit,
+                pass_point = extendTask.Pass_point,
+                completed_at = extendTask.Completed_at,
+            },
+            Extend_user = new
+            {
+                name = extendUser.Name,
+                profilepic = extendUser.ProfilePic
+            }
+        };
+    }
+
 }
