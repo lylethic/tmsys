@@ -12,6 +12,4 @@ startup.ConfigureServices(builder.Services, builder);
 var app = builder.Build();
 startup.Configure(app);
 
-startup.ConfigureHangfireJobs(app);
-
 app.Run();
