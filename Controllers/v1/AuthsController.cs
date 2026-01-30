@@ -1,3 +1,4 @@
+using System.Net;
 using Asp.Versioning;
 using AutoMapper;
 using Medo;
@@ -67,7 +68,12 @@ public class AuthsController : BaseApiController
         }
         catch (Exception ex)
         {
-            return Error(ex.Message);
+            return StatusCode(422, new
+            {
+                HttpStatus = HttpStatusCode.UnprocessableEntity,
+                IsSuccess = false,
+                Message = ex.Message
+            });
         }
     }
 

@@ -453,7 +453,7 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         var user = await _connection.QuerySingleOrDefaultAsync<User>(existingEmail, new { Email = email });
 
         if (user == null)
-            throw new NotFoundException("User not found or has been locked");
+            throw new NotFoundException("Invalid email or password");
         return user;
     }
 

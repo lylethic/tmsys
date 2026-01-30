@@ -52,24 +52,25 @@ public static class ServiceCollectionExtension
 
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, JwtPermissionHandler>();
-        services.AddTransient<IAssistantService, AssistantService>();
+        services.AddScoped<IAssistantService, AssistantService>();
         services.AddTransient<SeedDataService>();
 
-        services.AddTransient<IProjectRepository, ProjectRepository>();
-        services.AddTransient<IReportRepository, ReportRepository>();
-        services.AddTransient<ITaskRepository, TaskRepository>();
-        services.AddTransient<IProgressUpdateRepository, ProgressUpdateRepository>();
-        services.AddTransient<IProjectTypeRepository, ProjectTypeRepository>();
-        services.AddTransient<IOtpRepository, OTPRepository>();
-        services.AddTransient<IApprovedStatus, ApprovedRepository>();
-        services.AddTransient<IDepartment, DepartmentRepository>();
-        services.AddTransient<IUserDepartment, UserDepartmentRepository>();
-        services.AddTransient<IOtpService, OtpService>();
-        services.AddTransient<IWorkSchedule, WorkScheduleRepository>();
-        services.AddTransient<IPopup, PopupRepository>();
-        services.AddTransient<IAttendanceService, AttendanceCheckinRepository>();
-        services.AddTransient<ICompanyGeofence, CompanyGeofenceRepository>();
-        services.AddTransient<ISubmissionRepository, SubmissionRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<IProgressUpdateRepository, ProgressUpdateRepository>();
+        services.AddScoped<IProjectTypeRepository, ProjectTypeRepository>();
+        services.AddScoped<IOtpRepository, OTPRepository>();
+        services.AddScoped<IApprovedStatus, ApprovedRepository>();
+        services.AddScoped<IDepartment, DepartmentRepository>();
+        services.AddScoped<IUserDepartment, UserDepartmentRepository>();
+        services.AddScoped<IOtpService, OtpService>();
+        services.AddScoped<IWorkSchedule, WorkScheduleRepository>();
+        services.AddScoped<IPopup, PopupRepository>();
+        services.AddScoped<IAttendanceService, AttendanceCheckinRepository>();
+        services.AddScoped<ICompanyGeofence, CompanyGeofenceRepository>();
+        services.AddScoped<ISubmissionRepository, SubmissionRepository>();
+        services.AddScoped<IProjectMember, ProjectMemberRepository>();
 
         // Hangfire
         services.AddTransient<IJobRunService, JobRunService>();

@@ -425,8 +425,8 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
         sql.Append(" LIMIT @Limit;");
 
         // Build count SQL (count uses ONLY base filters, excluding cursor)
-        var countSql = new StringBuilder();
-        countSql.Append($"SELECT COUNT(*) FROM {_dbTableName}{baseWhereSql};");
+        // var countSql = new StringBuilder();
+        // countSql.Append($"SELECT COUNT(*) FROM {_dbTableName}{baseWhereSql};");
 
         // Prepare parameters: copy from extraParams then add cursor & limit
         var param = new DynamicParameters(extraParams);
@@ -436,14 +436,14 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
 
         // Debug
         Console.WriteLine("[SQL] " + sql);
-        Console.WriteLine("[COUNT_SQL] " + countSql);
+        // Console.WriteLine("[COUNT_SQL] " + countSql);
 
         // Execute count and query
-        var total = await _connection.ExecuteScalarAsync<long>(countSql.ToString(), extraParams);
+        // var total = await _connection.ExecuteScalarAsync<long>(countSql.ToString(), extraParams);
         var list = (await _connection.QueryAsync<T>(sql.ToString(), param)).ToList();
 
         var result = new CursorPaginatedResult<T>();
-        result.Total = total;
+        // result.Total = total;
 
         if (list.Count > request.PageSize)
         {

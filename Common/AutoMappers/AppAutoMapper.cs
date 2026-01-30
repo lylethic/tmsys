@@ -81,8 +81,22 @@ public class AppAutoMapper : Profile
             .ForMember(dest => dest.Radius_m, opt => opt.MapFrom(src => src.RadiusM))
             .ForMember(dest => dest.Active, opt => opt.MapFrom(src => src.Active));
 
+        // Submission
         CreateMap<SubmissionDto, Submission>();
         CreateMap<SubmissionCreate, Submission>();
         CreateMap<SubmissionUpdate, Submission>();
+
+        // ProjectMember
+        CreateMap<ProjectMemberCreate, ProjectMember>()
+            .ForMember(dest => dest.created, opt => opt.MapFrom(src => src.Created))
+            .ForMember(dest => dest.created_by, opt => opt.MapFrom(src => src.Created_by))
+            .ForMember(dest => dest.updated, opt => opt.MapFrom(src => src.Updated))
+            .ForMember(dest => dest.active, opt => opt.MapFrom(src => src.Active))
+            .ForMember(dest => dest.deleted, opt => opt.MapFrom(src => src.Deleted));
+        CreateMap<ProjectMemberUpdate, ProjectMember>()
+            .ForMember(dest => dest.active, opt => opt.MapFrom(src => src.Active))
+            .ForMember(dest => dest.updated, opt => opt.MapFrom(src => src.Updated))
+            .ForMember(dest => dest.updated_by, opt => opt.MapFrom(src => src.Updated_by))
+            .ForMember(dest => dest.deleted, opt => opt.MapFrom(src => src.Deleted));
     }
 }

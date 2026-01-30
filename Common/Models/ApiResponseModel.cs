@@ -9,7 +9,7 @@ public class ApiResponseModel
     public HttpStatusCode? HttpStatus { get; set; } = HttpStatusCode.OK;
     [JsonPropertyName("isSuccess")]
     public bool IsSuccess { get; set; } = true;
-    [JsonPropertyName("data")]
+    [JsonPropertyName("responseData")]
     public object? Data { get; set; }
     [JsonPropertyName("errorCode")]
     public string ErrorCode { get; set; } = "";
