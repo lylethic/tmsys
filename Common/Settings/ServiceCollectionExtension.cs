@@ -81,6 +81,9 @@ public static class ServiceCollectionExtension
         // Request middleware
         services.AddScoped<ClientRequestLogRepository>();
 
+        // Statistics
+        services.AddScoped<StatisticsRepository>();
+
         // Cloudinary
         services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
         services.AddSingleton(provider =>

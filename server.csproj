@@ -57,6 +57,7 @@
         <Compile Include="Repositories\CompanyGeofenceRepository.cs" />
         <Compile Include="Repositories\SubmissionRepository.cs" />
         <Compile Include="Repositories\ProjectMemberRepository.cs" />
+        <Compile Include="Repositories\StatisticsRepository.cs" />
     </ItemGroup>
 
     <ItemGroup>
