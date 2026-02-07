@@ -173,7 +173,7 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
 
             var orderDirection = request.Ascending ? "ASC" : "DESC";
 
-            var page = await GetListByIdCursorNoDeleleColAsync<Submission>(
+            var page = await GetListCursorBasedAsync<Submission>(
                 request: request,
                 extraWhere: string.Join(" AND ", where),
                 extraParams: param,

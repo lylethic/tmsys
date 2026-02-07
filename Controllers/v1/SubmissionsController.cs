@@ -69,7 +69,7 @@ public class SubmissionsController : BaseApiController
     }
 
     [HttpPost]
-    [RequirePermission("CREATE", "AM_CREATE")]
+    [RequirePermission("SYS_ADMIN", "CREATE")]
     public async Task<IActionResult> Create([FromBody] SubmissionCreate dto)
     {
         try
@@ -91,7 +91,7 @@ public class SubmissionsController : BaseApiController
     /// - Status set to "Pending Review" awaiting leader approval
     /// </summary>
     [HttpPost("submit")]
-    [RequirePermission("CREATE", "AM_CREATE")]
+    [RequirePermission("SYS_ADMIN", "CREATE")]
     public async Task<IActionResult> SubmitTask([FromBody] SubmitTaskRequest dto)
     {
         try
@@ -117,14 +117,14 @@ public class SubmissionsController : BaseApiController
     /// - Updates task status to Completed if approved and passed
     /// </summary>
     [HttpPost("{id}/review")]
-    [RequirePermission("EDIT", "AM_EDIT")]
+    [RequirePermission("SYS_ADMIN", "EDIT")]
     public async Task<IActionResult> ReviewSubmission(Guid id, [FromBody] ReviewSubmissionRequest dto)
     {
         try
         {
-            var reviewerId = Guid.Parse(_httpContextAccessor.HttpContext?.User?.FindFirst("user_id")?.Value 
+            var reviewerId = Guid.Parse(_httpContextAccessor.HttpContext?.User?.FindFirst("user_id")?.Value
                 ?? throw new UnauthorizedAccessException("User ID not found in token"));
-            
+
             var result = await _submissionRepo.ReviewSubmissionAsync(
                 id,
                 reviewerId,
@@ -141,7 +141,7 @@ public class SubmissionsController : BaseApiController
     }
 
     [HttpPut("{id}")]
-    [RequirePermission("EDIT", "AM_EDIT")]
+    [RequirePermission("SYS_ADMIN", "EDIT")]
     public async Task<IActionResult> Update(Guid id, [FromBody] SubmissionUpdate dto)
     {
         try
@@ -157,7 +157,7 @@ public class SubmissionsController : BaseApiController
     }
 
     [HttpDelete("{id}")]
-    [RequirePermission("DELETE", "AM_DELETE")]
+    [RequirePermission("SYS_ADMIN", "DELETE")]
     public async Task<IActionResult> Delete(Guid id)
     {
         try

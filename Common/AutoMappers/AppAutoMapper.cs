@@ -1,6 +1,5 @@
-using System;
 using AutoMapper;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.Blazor;
+using System.Text.Json;
 using server.Application.DTOs;
 using server.Domain.Entities;
 
@@ -28,6 +27,12 @@ public class AppAutoMapper : Profile
         CreateMap<Project, ProjectCreate>();
         CreateMap<ProjectUpdate, Project>();
         CreateMap<Project, ProjectUpdate>();
+
+        CreateMap<ProjectRawDto, ProjectExtendedModel>()
+            .ForMember(dest => dest.Extend_users,
+                opt => opt.MapFrom(src => DeserializeUsers(src.Extend_users_json)))
+            .ForMember(dest => dest.Extend_project_type,
+                opt => opt.MapFrom(src => DeserializeProjectType(src.Extend_project_type_json)));
 
         CreateMap<ProjectCreate, Project>();
         CreateMap<ProjectUpdate, Project>();
@@ -98,5 +103,17 @@ public class AppAutoMapper : Profile
             .ForMember(dest => dest.updated, opt => opt.MapFrom(src => src.Updated))
             .ForMember(dest => dest.updated_by, opt => opt.MapFrom(src => src.Updated_by))
             .ForMember(dest => dest.deleted, opt => opt.MapFrom(src => src.Deleted));
+    }
+
+    private static List<ProjectMemberInfo>? DeserializeUsers(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        return JsonSerializer.Deserialize<List<ProjectMemberInfo>>(json);
+    }
+
+    private static ProjectTypeInfo? DeserializeProjectType(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        return JsonSerializer.Deserialize<ProjectTypeInfo>(json);
     }
 }

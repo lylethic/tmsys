@@ -1,9 +1,6 @@
-using System;
-using System.ComponentModel.DataAnnotations.Schema;
 using server.Common.Domain.Entities;
 using server.Common.Domain.Request.Create;
 using server.Common.Domain.Request.Update;
-using server.Common.Interfaces;
 
 namespace server.Application.DTOs;
 
@@ -20,12 +17,12 @@ public class CreateProjectType : DomainCreate
 
 public class UpdateProjectType : DomainUpdate
 {
-    public string Name { get; set; }
-    public string Description { get; set; }
+    public string? Name { get; set; }
+    public string? Description { get; set; }
 }
 
-public class ProjectTypeModel : DomainModel, IHasTotalCount
+public class ProjectTypeModel : DomainModel
 {
-    public string Name { get; set; }
-    public string Description { get; set; }
+    public string? Name { get; set; }
+    public string? Description { get; set; }
 }

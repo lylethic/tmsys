@@ -1,18 +1,16 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using server.Application.Request;
 using server.Common.Settings;
 using server.Application.Common.Interfaces;
 using server.Application.DTOs;
 using server.Domain.Entities;
-using System.Security.Claims;
 using server.Common.Interfaces;
 using server.Services;
 using Microsoft.AspNetCore.Authorization;
-using server.Common.CoreConstans;
 using server.Application.Models;
 using Asp.Versioning;
 using Medo;
+using server.Application.Request.Search;
 
 namespace server.Controllers.v1;
 
@@ -43,33 +41,33 @@ public class UserManagementController : BaseApiController
     }
 
     [HttpGet("me")]
-    public async Task<IActionResult> Me()
+    public async Task<IActionResult> GetMyInfo()
     {
         try
         {
-            var result = await _userRepo.GetByIdAsync(Guid.Parse(_assistantService.UserId));
-            var role = _assistantService.Role;
-            var permissions = _assistantService.Permissions;
-            result.Password = "";
-            result.Token = "";
-            var user = new
+            var userId = Guid.Parse(_assistantService.UserId);
+            var user = await _userRepo.GetByIdAsync(userId);
+            var rolesAndPermissions = await _userRepo.GetUserRolesAndPermissionsAsync(userId);
+
+            var userInfo = new
             {
-                username = result.Username,
-                name = result.Name,
-                email = result.Email,
-                city = result.City,
-                profilepic = result.ProfilePic,
-                last_login_time = result.Last_login_time,
-                is_send_email = result.Is_send_email,
-                profilepic_data = result.Profilepic_data,
-                active = result.Active,
-                deleted = result.Deleted
+                user.Id,
+                user.Username,
+                user.Name,
+                user.Email,
+                user.ProfilePic,
+                user.City,
+                user.Active,
+                user.Created,
+                user.Updated,
+                user.Last_login_time
             };
+
             return Success(new
             {
-                user,
-                role,
-                permissions
+                User = userInfo,
+                Roles = rolesAndPermissions.Roles.Select(r => r.Name).ToArray(),
+                Permissions = rolesAndPermissions.Permissions.Select(p => p.Name).ToArray()
             });
         }
         catch (Exception ex)
@@ -79,7 +77,7 @@ public class UserManagementController : BaseApiController
     }
 
     [HttpGet]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN", "READ")]
     public async Task<IActionResult> GetAll([FromQuery] UserSearch request)
     {
         try
@@ -124,34 +122,14 @@ public class UserManagementController : BaseApiController
 
     [AllowAnonymous]
     [HttpPost]
-    [RequirePermission("CREATE", "AM_CREATE")]
-    public async Task<IActionResult> Add([FromForm] CreateUserDto dto)
+    [RequirePermission("SYS_ADMIN", "CREATE")]
+    public async Task<IActionResult> Add([FromBody] CreateUserDto dto)
     {
         try
         {
-            var imageUrl = "";
-            if (dto.ProfilePic != null)
-            {
-                var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", CoreConstants.UploadFolder);
-                if (!Directory.Exists(uploadDir))
-                    Directory.CreateDirectory(uploadDir);
-
-                var fileName = $"{Uuid7.NewUuid7().ToGuid()}{Path.GetExtension(dto.ProfilePic.FileName)}";
-                var filePath = Path.Combine(uploadDir, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await dto.ProfilePic.CopyToAsync(stream);
-                }
-
-                // Build public URL
-                var baseUrl = $"{Request.Scheme}://{Request.Host}/{CoreConstants.Prefix}";
-                imageUrl = $"{baseUrl}/{CoreConstants.UploadFolder}/{fileName}";
-            }
-
             var request = _mapper.Map<User>(dto);
-            request.ProfilePic = imageUrl;
             var result = await _userRepo.RegisterUser(request);
+            result.Password = null;
             return Success(result);
         }
         catch (Exception ex)
@@ -161,7 +139,7 @@ public class UserManagementController : BaseApiController
     }
 
     [HttpDelete("id")]
-    [RequirePermission("DELETE", "AM_DELETE")]
+    [RequirePermission("SYS_ADMIN", "DELETE")]
     public async Task<IActionResult> Delete(Guid id)
     {
         try
@@ -182,7 +160,7 @@ public class UserManagementController : BaseApiController
     /// <param name="ids"></param>
     /// <returns></returns>
     [HttpDelete("bulk")]
-    [RequirePermission("DELETE", "AM_DELETE")]
+    [RequirePermission("SYS_ADMIN", "DELETE")]
     public async Task<IActionResult> DeleteMany([FromBody] List<Guid> ids)
     {
         try
@@ -200,40 +178,12 @@ public class UserManagementController : BaseApiController
     }
 
     [HttpPatch("id")]
-    [RequirePermission("EDIT", "AM_EDIT")]
-    public async Task<IActionResult> Update(Guid id, [FromForm] UserUpdate dto)
+    [RequirePermission("SYS_ADMIN", "EDIT")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UserUpdate dto)
     {
         try
         {
-
-            string imageUrl = "";
-
-            if (dto.ProfilePic != null)
-            {
-                var uploadFolder = Path.Combine("wwwroot", CoreConstants.UploadFolder);
-                var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), uploadFolder);
-                if (!Directory.Exists(uploadDir))
-                    Directory.CreateDirectory(uploadDir);
-
-                var fileName = $"{Uuid7.NewUuid7().ToGuid()}{Path.GetExtension(dto.ProfilePic.FileName)}";
-                var filePath = Path.Combine(uploadDir, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await dto.ProfilePic.CopyToAsync(stream);
-                }
-                var baseUrl = $"{Request.Scheme}://{Request.Host}/{CoreConstants.Prefix}";
-                imageUrl = $"{baseUrl}/{CoreConstants.UploadFolder}/{fileName}";
-
-                // Debug
-                _logger.Info($"Uploaded file saved to: {filePath}");
-                _logger.Info($"Public URL: {imageUrl}");
-            }
-
             var user = _mapper.Map<User>(dto);
-            if (!string.IsNullOrEmpty(imageUrl))
-                user.ProfilePic = imageUrl;
-
             var result = await _userRepo.UpdateItemAsync(id, user);
             return Success(result);
         }

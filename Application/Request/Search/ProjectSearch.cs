@@ -7,9 +7,20 @@ namespace server.Application.Request.Search;
 
 public class ProjectSearch : BaseSearch
 {
+    [FromQuery(Name = "projectId")]
+    public Guid? ProjectId { get; set; }
+    [FromQuery(Name = "managerId")]
+    public Guid? ManagerId { get; set; }
+    [FromQuery(Name = "memberId")]
+    public Guid? MemberId { get; set; }
     [FromQuery(Name = "startDate")]
-    public DateTime? P_start_date { get; set; }
+    public DateTime? StartDate { get; set; }
 
     [FromQuery(Name = "endDate")]
-    public DateTime? P_end_date { get; set; }
+    public DateTime? EndDate { get; set; }
+
+    [FromQuery(Name = "status")]
+    public string? Status { get; set; }
+    [FromQuery(Name = "sort")]
+    public string? SortOrderDirection { get; set; }
 }

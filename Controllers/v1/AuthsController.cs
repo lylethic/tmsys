@@ -134,28 +134,7 @@ public class AuthsController : BaseApiController
     {
         try
         {
-            var imageUrl = "";
-            if (dto.ProfilePic != null)
-            {
-                var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", CoreConstants.UploadFolder);
-                if (!Directory.Exists(uploadDir))
-                    Directory.CreateDirectory(uploadDir);
-
-                var fileName = $"{Uuid7.NewUuid7().ToGuid()}{Path.GetExtension(dto.ProfilePic.FileName)}";
-                var filePath = Path.Combine(uploadDir, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await dto.ProfilePic.CopyToAsync(stream);
-                }
-
-                // Build public URL
-                var baseUrl = $"{Request.Scheme}://{Request.Host}/{CoreConstants.Prefix}";
-                imageUrl = $"{baseUrl}/{CoreConstants.UploadFolder}/{fileName}";
-            }
-
             var request = _mapper.Map<User>(dto);
-            request.ProfilePic = imageUrl;
             var result = await _userRepo.RegisterUser(request);
             return Success(result);
         }
@@ -220,42 +199,6 @@ public class AuthsController : BaseApiController
         {
             await _auth.Logout();
             return Success("Logged out successfully.");
-        }
-        catch (Exception ex)
-        {
-            return Error(ex.Message);
-        }
-    }
-
-    [HttpGet("getMyInfo")]
-    public async Task<IActionResult> GetMyInfo()
-    {
-        try
-        {
-            var userId = Guid.Parse(_assistantService.UserId);
-            var user = await _userRepo.GetByIdAsync(userId);
-            var rolesAndPermissions = await _userRepo.GetUserRolesAndPermissionsAsync(userId);
-
-            var userInfo = new
-            {
-                user.Id,
-                user.Username,
-                user.Name,
-                user.Email,
-                user.ProfilePic,
-                user.City,
-                user.Active,
-                user.Created,
-                user.Updated,
-                user.Last_login_time
-            };
-
-            return Success(new
-            {
-                User = userInfo,
-                Roles = rolesAndPermissions.Roles,
-                Permissions = rolesAndPermissions.Permissions
-            });
         }
         catch (Exception ex)
         {

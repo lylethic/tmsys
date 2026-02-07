@@ -10,4 +10,5 @@ public interface IProjectMember : IRepository<ProjectMember>
 {
     Task<CursorPaginatedResult<ProjectMemberModel>> GetProjectMemberPageAsync(ProjectMemberSearch request);
     Task<ProjectMemberModel> GetProjectMemberAsync(Guid id);
+    Task<List<Object>> GetMembersProjectAsync(Guid projectId);
 }

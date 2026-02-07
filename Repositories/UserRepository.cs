@@ -6,6 +6,7 @@ using server.Application.DTOs;
 using server.Application.Enums;
 using server.Application.Models;
 using server.Application.Request;
+using server.Application.Request.Search;
 using server.Common.CoreConstans;
 using server.Common.Exceptions;
 using server.Common.Interfaces;
@@ -42,6 +43,176 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         _assistantService = assistantService;
         _env = env;
         this._cloudinaryService = cloudinaryService;
+    }
+
+    public async Task<CursorPaginatedResult<UserModel>> GetAllAsync(UserSearch request)
+    {
+        var where = new List<string>();
+        var parameters = new DynamicParameters();
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            where.Add("LOWER(email) LIKE LOWER(@Email)");
+            parameters.Add("Email", $"%{request.Email}%");
+        }
+        if (request.Active != null)
+        {
+            where.Add("active = @Active");
+            parameters.Add("Active", request.Active);
+        }
+        if (!string.IsNullOrWhiteSpace(request.Name))
+        {
+            where.Add("LOWER(name) LIKE LOWER(@Name)");
+            parameters.Add("Name", $"%{request.Name}%");
+        }
+        if (request.Deleted is not null)
+        {
+            where.Add("deleted = @Deleted");
+            parameters.Add("Deleted", request.Deleted);
+        }
+        return await this.GetListCursorBasedAsync<UserModel>(
+            request: request,
+            extraWhere: string.Join(" AND ", where),
+            extraParams: parameters
+        );
+    }
+
+    /// <summary>
+    /// Get user with permissions and roles.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    /// <exception cref="BadRequestException"></exception>
+    public async Task<User_Permisson_Dto> GetUserWithPermissionAsync(Guid id)
+    {
+        const string sql = """
+            SELECT 
+                a.id AS user_id,
+                a.email,
+                a.active,
+                a.created,
+                a.updated,
+                ar.role_id,
+                p.name AS permission_name
+            FROM users a
+            JOIN user_roles ar ON a.id = ar.user_id
+            LEFT JOIN role_permissions rp ON ar.role_id = rp.role_id
+            LEFT JOIN permissions p ON rp.permission_id = p.id
+            WHERE a.id = @Id AND a.active = true;
+        """;
+
+        var rows = await _connection.QueryAsync(sql, new { Id = id });
+
+        if (!rows.Any())
+            throw new NotFoundException("user not found");
+
+        User_Permisson_Dto? user = null;
+
+        foreach (var row in rows)
+        {
+            if (user is null)
+            {
+                Guid userId = row.user_id;
+                Guid roleId = row.role_id;
+
+                user = new User_Permisson_Dto
+                {
+                    Id = userId,
+                    Email = row.email,
+                    Active = row.active,
+                    Role_id = roleId,
+                    Permissions = []
+                };
+            }
+
+            if (row.permission_name != null && !user.Permissions.Contains(row.permission_name))
+            {
+                user.Permissions.Add(row.permission_name);
+            }
+        }
+        if (user != null)
+            return user;
+        return null!;
+    }
+
+
+    public async Task<User> GetEmailAsync(string email)
+    {
+        var isValidEmail = ValidatorHepler.EmailValidation(email);
+        if (isValidEmail == false)
+            throw new BadRequestException("Invalid email");
+        var existingEmail = """
+            SELECT id, name, email, password, last_login_time, last_otp_sent_at, failed_otp_attempts, lockout_end_at
+            FROM users
+            WHERE LOWER(email) = LOWER(@Email) AND active = true AND deleted = false;
+        """;
+        var user = await _connection.QuerySingleOrDefaultAsync<User>(existingEmail, new { Email = email });
+
+        if (user == null)
+            throw new NotFoundException("Invalid email or password");
+        return user;
+    }
+
+    public async Task<UserRolesAndPermissions> GetUserRolesAndPermissionsAsync(Guid userId)
+    {
+        var sql = """
+            SELECT DISTINCT 
+                r.id as role_id, r.name as role_name,
+                p.id as permission_id, p.name as permission_name
+            FROM user_roles ar
+                INNER JOIN roles r ON ar.role_id = r.id
+                INNER JOIN role_permissions rp ON r.id = rp.role_id
+                INNER JOIN permissions p ON rp.permission_id = p.id
+            WHERE ar.user_id = @UserId
+        """;
+
+        var rolePermissionMap = new Dictionary<Guid, Role>();
+        var allPermissions = new List<Permission>();
+
+        var results = await _connection.QueryAsync(sql, new { UserId = userId });
+
+        foreach (var row in results)
+        {
+            var roleId = (Guid)row.role_id;
+            var roleName = (string)row.role_name;
+            var permissionId = (Guid)row.permission_id;
+            var permissionName = (string)row.permission_name;
+
+            if (!rolePermissionMap.ContainsKey(roleId))
+            {
+                rolePermissionMap[roleId] = new Role { Id = roleId, Name = roleName, Permissions = [] };
+            }
+
+            var permission = new Permission { Id = permissionId, Name = permissionName };
+            rolePermissionMap[roleId].Permissions.Add(permission);
+
+            if (!allPermissions.Any(p => p.Id == permissionId))
+            {
+                allPermissions.Add(permission);
+            }
+        }
+
+        return new UserRolesAndPermissions
+        {
+            Roles = [.. rolePermissionMap.Values],
+            Permissions = allPermissions
+        };
+    }
+
+    public async Task<bool> SetPassword(Guid userId, string newPassword)
+    {
+        string hashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        string sql = "UPDATE users SET password = @password WHERE id = @userId";
+        int affected = await _connection.ExecuteAsync(sql, new { password = hashedPassword, userId = userId });
+
+        if (affected > 0)
+            return true;
+        return false;
+    }
+
+    public async Task ClearToken(Guid id)
+    {
+        var clearTokenSql = "UPDATE users SET token = NULL WHERE id = @id";
+        await _connection.ExecuteAsync(clearTokenSql, new { id });
     }
 
     /// <summary>
@@ -133,7 +304,7 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
                 deleted = true,
                 active = false,
                 updated = @updated,
-                updated_by = @updated_by,
+                updated_by = @updated_by
                 WHERE id = @Id
             """;
             var result = await _connection.ExecuteAsync(sql, new { Id = id, updated = DateTime.UtcNow, updated_by = updatedBy });
@@ -184,105 +355,6 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         }
     }
 
-    public async Task<PaginatedResult<UserPermissionModel>> GetAllAsync(UserSearch? request)
-    {
-        const string sql = """
-            SELECT * FROM get_list_of_users_with_roles_permissions(
-                @email_filter,
-                @name_filter,
-                @is_active_filter,
-                @role_name_filter,
-                @page_index,
-                @page_size,
-                @order_by
-            );
-        """;
-
-        return await GetListWithPaginationAndFilters<UserSearch, UserPermissionModel>(
-            filter: request,
-            sqlQuery: sql,
-            parameterMapper: filter => new
-            {
-                email_filter = filter?.Email,
-                name_filter = filter?.Name,
-                is_active_filter = filter?.IsActive,
-                role_name_filter = filter?.Role_name,
-                page_index = filter != null ? filter.PageIndex : 1,
-                page_size = filter != null ? filter.PageSize : 20,
-                order_by = filter?.OrderBy
-            });
-    }
-
-    /// <summary>
-    /// Get user with permissions and roles.
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    /// <exception cref="BadRequestException"></exception>
-    public async Task<User_Permisson_Dto> GetUserWithPermissionAsync(Guid id)
-    {
-        const string sql = """
-            SELECT 
-                a.id AS user_id,
-                a.email,
-                a.active,
-                a.created,
-                a.updated,
-                ar.role_id,
-                p.name AS permission_name
-            FROM users a
-            JOIN user_roles ar ON a.id = ar.user_id
-            LEFT JOIN role_permissions rp ON ar.role_id = rp.role_id
-            LEFT JOIN permissions p ON rp.permission_id = p.id
-            WHERE a.id = @Id AND a.active = true;
-        """;
-
-        var rows = await _connection.QueryAsync(sql, new { Id = id });
-
-        if (!rows.Any())
-            throw new NotFoundException("user not found");
-
-        User_Permisson_Dto? user = null;
-
-        foreach (var row in rows)
-        {
-            if (user is null)
-            {
-                Guid userId = row.user_id;
-                Guid roleId = row.role_id;
-
-                user = new User_Permisson_Dto
-                {
-                    Id = userId,
-                    Email = row.email,
-                    Active = row.active,
-                    Role_id = roleId,
-                    Permissions = []
-                };
-            }
-
-            if (row.permission_name != null && !user.Permissions.Contains(row.permission_name))
-            {
-                user.Permissions.Add(row.permission_name);
-            }
-        }
-        if (user != null)
-            return user;
-        return null!;
-    }
-
-    public async Task<User> GetByIdAsync(Guid id)
-    {
-        const string sql = """
-            SELECT *
-            FROM users 
-            WHERE id = @Id
-        """;
-        var result = await _connection.QuerySingleOrDefaultAsync<User>(sql, new { Id = id })
-            ?? throw new NotFoundException("user not found");
-        return result;
-    }
-
     public async Task<bool> UpdateItemAsync(Guid id, User entity)
     {
         if (entity is null)
@@ -316,7 +388,7 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
                     is_send_email = @Is_send_email,
                     updated_by = @Updated_by,
                     updated = @Updated,
-                    active = @active
+                    active = @Active
                 WHERE id = @Id
             """;
         try
@@ -423,11 +495,6 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         }
     }
 
-    public Task<PaginatedResult<User>> GetAllAsync(PaginationRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task UpdateLoginTime(Guid id, string accessToken)
     {
         var lastLogin = DateTime.UtcNow;
@@ -440,91 +507,9 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         await _connection.ExecuteAsync(updateToken, new { token = accessToken, lastLogin, id });
     }
 
-    public async Task<User> GetEmailAsync(string email)
-    {
-        var isValidEmail = ValidatorHepler.EmailValidation(email);
-        if (isValidEmail == false)
-            throw new BadRequestException("Invalid email");
-        var existingEmail = """
-            SELECT id, name, email, password, last_login_time, last_otp_sent_at, failed_otp_attempts, lockout_end_at
-            FROM users
-            WHERE LOWER(email) = LOWER(@Email) AND active = true AND deleted = false;
-        """;
-        var user = await _connection.QuerySingleOrDefaultAsync<User>(existingEmail, new { Email = email });
-
-        if (user == null)
-            throw new NotFoundException("Invalid email or password");
-        return user;
-    }
-
-    public async Task<UserRolesAndPermissions> GetUserRolesAndPermissionsAsync(Guid userId)
-    {
-        var sql = """
-            SELECT DISTINCT 
-                r.id as role_id, r.name as role_name,
-                p.id as permission_id, p.name as permission_name
-            FROM user_roles ar
-                INNER JOIN roles r ON ar.role_id = r.id
-                INNER JOIN role_permissions rp ON r.id = rp.role_id
-                INNER JOIN permissions p ON rp.permission_id = p.id
-            WHERE ar.user_id = @UserId
-        """;
-
-        var rolePermissionMap = new Dictionary<Guid, Role>();
-        var allPermissions = new List<Permission>();
-
-        var results = await _connection.QueryAsync(sql, new { UserId = userId });
-
-        foreach (var row in results)
-        {
-            var roleId = (Guid)row.role_id;
-            var roleName = (string)row.role_name;
-            var permissionId = (Guid)row.permission_id;
-            var permissionName = (string)row.permission_name;
-
-            if (!rolePermissionMap.ContainsKey(roleId))
-            {
-                rolePermissionMap[roleId] = new Role { Id = roleId, Name = roleName, Permissions = [] };
-            }
-
-            var permission = new Permission { Id = permissionId, Name = permissionName };
-            rolePermissionMap[roleId].Permissions.Add(permission);
-
-            if (!allPermissions.Any(p => p.Id == permissionId))
-            {
-                allPermissions.Add(permission);
-            }
-        }
-
-        return new UserRolesAndPermissions
-        {
-            Roles = [.. rolePermissionMap.Values],
-            Permissions = allPermissions
-        };
-    }
-
-    public async Task<bool> SetPassword(Guid userId, string newPassword)
-    {
-        string hashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword);
-        string sql = "UPDATE users SET password = @password WHERE id = @userId";
-        int affected = await _connection.ExecuteAsync(sql, new { password = hashedPassword, userId = userId });
-
-        if (affected > 0)
-            return true;
-        return false;
-    }
-
-    public async Task ClearToken(Guid id)
-    {
-        var clearTokenSql = "UPDATE users SET token = NULL WHERE id = @id";
-        await _connection.ExecuteAsync(clearTokenSql, new { id });
-    }
-
     public async Task<string> UpdateAvatar(Guid userId, IFormFile file)
     {
-        var existingUser = await GetByIDAsync(userId);
-        if (existingUser == null)
-            throw new NotFoundException("User not found");
+        var existingUser = await GetByIDAsync(userId) ?? throw new NotFoundException("User not found");
         var result = await _cloudinaryService.UploadImageAsync(
             file,
             ImageUploadQuality.Thumbnail,

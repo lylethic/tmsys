@@ -15,10 +15,10 @@ namespace server.Repositories;
 public class ProjectMemberRepository : SimpleCrudRepository<ProjectMember, Guid>, IProjectMember
 {
     private readonly IAssistantService _assistantService;
-    private readonly IProjectRepository _projectRepo;
+    private readonly Lazy<IProjectRepository> _projectRepo;
     private readonly IUserRepository _userRepo;
     public ProjectMemberRepository(IDbConnection connection,
-        IProjectRepository projectRepo,
+        Lazy<IProjectRepository> projectRepo,
         IUserRepository userRepo,
         IAssistantService assistantService) : base(connection)
     {
@@ -36,7 +36,7 @@ public class ProjectMemberRepository : SimpleCrudRepository<ProjectMember, Guid>
         var page = await _connection.QuerySingleOrDefaultAsync<ProjectMember>(sql, new { Id = id })
             ?? throw new NotFoundException("Not found");
 
-        var extendProject = await _projectRepo.GetByIdAsync(page.project_id);
+        var extendProject = await _projectRepo.Value.GetByIdAsync(page.project_id);
         var extendUser = await _userRepo.GetByIdAsync(page.member_id);
 
         var result = MapToProjectMemberModel(page, extendProject, extendUser);
@@ -50,7 +50,7 @@ public class ProjectMemberRepository : SimpleCrudRepository<ProjectMember, Guid>
 
         if (!string.IsNullOrWhiteSpace(search.Keyword))
         {
-            where.Add("role ILIKE '%' || @Keyword || '%'");
+            where.Add("name ILIKE '%' || @Keyword || '%'");
             param.Add("Keyword", search.Keyword);
         }
 
@@ -78,7 +78,7 @@ public class ProjectMemberRepository : SimpleCrudRepository<ProjectMember, Guid>
             _ => search.Ascending ? "ASC" : "DESC"    // default: fallback to boolean Ascending
         };
 
-        var page = await GetListByIdCursorNoDeleleColAsync<ProjectMemberModel>(
+        var page = await GetListCursorBasedAsync<ProjectMemberModel>(
             request: search,
             extraWhere: string.Join(" AND ", where),
             extraParams: param,
@@ -168,6 +168,19 @@ public class ProjectMemberRepository : SimpleCrudRepository<ProjectMember, Guid>
         """;
         var result = await _connection.ExecuteAsync(sql, entity);
         return result > 0;
+    }
+
+    public async Task<List<Object>> GetMembersProjectAsync(Guid projectId)
+    {
+        var sql = """
+            SELECT pm.member_id, u.name AS member_name, u.profilepic AS member_profilepic
+            FROM project_members pm
+            JOIN users u ON pm.member_id = u.id
+            WHERE pm.project_id = @ProjectId AND pm.deleted = false;
+        """;
+
+        var result = await _connection.QueryAsync<Object>(sql, new { ProjectId = projectId });
+        return [.. result];
     }
 
     private static ProjectMemberModel MapToProjectMemberModel(ProjectMember projectMember, Project extendProject, User extendUser)

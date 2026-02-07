@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using server.Application.Common.Interfaces;
 using server.Application.DTOs;
 using server.Application.Request;
+using server.Application.Request.Search;
 using server.Common.Interfaces;
 using server.Common.Settings;
 using server.Domain.Entities;
@@ -32,8 +33,8 @@ public class TasksController : BaseApiController
     }
 
     [HttpGet]
-    // [RequirePermission("READ", "AM_READ")]
-    public async Task<IActionResult> GetAll([FromQuery] PaginationRequest request)
+    // [RequirePermission"SYS_ADMIN", "READ")]
+    public async Task<IActionResult> GetAll([FromQuery] TaskSearch request)
     {
         try
         {
@@ -47,7 +48,7 @@ public class TasksController : BaseApiController
     }
 
     [HttpGet("{id}")]
-    // [RequirePermission("READ", "AM_READ")]
+    // [RequirePermission"SYS_ADMIN", "READ")]
     public async Task<IActionResult> GetById(Guid id)
     {
         try
@@ -76,7 +77,7 @@ public class TasksController : BaseApiController
     }
 
     [HttpPost]
-    [RequirePermission("CREATE", "AM_CREATE")]
+    [RequirePermission("SYS_ADMIN", "CREATE")]
     public async Task<IActionResult> Add([FromBody] TaskCreate dto)
     {
         try
@@ -92,7 +93,7 @@ public class TasksController : BaseApiController
     }
 
     [HttpDelete("{id}")]
-    [RequirePermission("DELETE", "AM_DELETE")]
+    [RequirePermission("SYS_ADMIN", "DELETE")]
     public async Task<IActionResult> Delete(Guid id)
     {
         try
@@ -107,7 +108,7 @@ public class TasksController : BaseApiController
     }
 
     [HttpPatch("{id}")]
-    [RequirePermission("EDIT", "AM_EDIT")]
+    [RequirePermission("SYS_ADMIN", "EDIT")]
     public async Task<IActionResult> Update(Guid id, [FromBody] TaskUpdate dto)
     {
         try

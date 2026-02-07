@@ -1,11 +1,19 @@
-using System;
+using Microsoft.AspNetCore.Mvc;
+using server.Application.Search;
 
-namespace server.Application.Request;
+namespace server.Application.Request.Search;
 
-public class UserSearch : PaginationRequest
+public class UserSearch : BaseSearch
 {
+    [FromQuery(Name = "email")]
     public string? Email { get; set; }
+
+    [FromQuery(Name = "name")]
     public string? Name { get; set; }
-    public bool? IsActive { get; set; }
-    public string? Role_name { get; set; }
+
+    [FromQuery(Name = "active")]
+    public bool? Active { get; set; }
+
+    [FromQuery(Name = "deleted")]
+    public bool? Deleted { get; set; }
 }

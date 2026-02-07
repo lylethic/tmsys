@@ -1,8 +1,6 @@
-using System;
 using server.Common.Domain.Entities;
 using server.Common.Domain.Request.Create;
 using server.Common.Domain.Request.Update;
-using server.Common.Interfaces;
 
 namespace server.Application.DTOs;
 
@@ -27,16 +25,16 @@ public class ReportUpdate : DomainUpdate
 {
     public Guid Project_id { get; set; }
     public DateTime Report_date { get; set; }
-    public string Content { get; set; }
-    public string Type { get; set; }
+    public string? Content { get; set; }
+    public string? Type { get; set; }
 }
 
 
-public class ReportModel : DomainModel, IHasTotalCount
+public class ReportModel : DomainModel
 {
     public Guid Project_id { get; set; }
     public DateTime Report_date { get; set; }
-    public string Content { get; set; }
-    public string Type { get; set; }
+    public string? Content { get; set; }
+    public string? Type { get; set; }
     public Guid Generated_by { get; set; }
 }

@@ -12,7 +12,4 @@ public class DomainModel
     public Guid? Updated_by { get; set; }
     public bool Active { get; set; }
     public bool Deleted { get; set; }
-
-    [JsonIgnore]
-    public long? Total_count { get; set; }
 }

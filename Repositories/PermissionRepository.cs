@@ -231,4 +231,18 @@ public class PermissionRepository : SimpleCrudRepository<Permission, Guid>, IPer
             throw new InternalErrorException(ex.Message);
         }
     }
+
+    public async Task<List<Permission>> GetPermissionsByRoleAsync(string roleName)
+    {
+        const string sql = """
+            SELECT DISTINCT p.id, p.name
+            FROM permissions p
+                INNER JOIN role_permissions rp ON p.id = rp.permission_id
+                INNER JOIN roles r ON rp.role_id = r.id
+            WHERE r.name = @RoleName
+        """;
+
+        var permissions = await _connection.QueryAsync<Permission>(sql, new { RoleName = roleName });
+        return [.. permissions];
+    }
 }

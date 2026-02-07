@@ -27,6 +27,47 @@ public class ReportRepository : SimpleCrudRepository<Report, Guid>, IReportRepos
         _projectrepository = projectrepository;
     }
 
+    public async Task<CursorPaginatedResult<Report>> GetAllAsync(ReportSearch request)
+    {
+        var where = new List<string>();
+        var param = new DynamicParameters();
+
+        where.Add("deleted = false");
+
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
+        {
+            where.Add("(content ILIKE '%' || @Keyword || '%' OR type ILIKE '%' || @Keyword || '%')");
+            param.Add("Keyword", request.Keyword);
+        }
+
+        if (request.P_report_date.HasValue)
+        {
+            where.Add("DATE(report_date) = DATE(@ReportDate)");
+            param.Add("ReportDate", request.P_report_date.Value);
+        }
+
+        if (request.Project_id.HasValue && request.Project_id.Value != Guid.Empty)
+        {
+            where.Add("project_id = @ProjectId");
+            param.Add("ProjectId", request.Project_id.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.P_type))
+        {
+            where.Add("type ILIKE @Type");
+            param.Add("Type", request.P_type);
+        }
+
+        return await this.GetListCursorBasedAsync<Report>(
+           request: request,
+           extraWhere: string.Join(" AND ", where),
+           extraParams: param,
+           orderDirection: request.Ascending ? "ASC" : "DESC",
+           orderByColumn: "id",
+           idColumn: "id"
+        );
+    }
+
     public async Task<Report> AddAsync(Report entity)
     {
         if (entity is null)
@@ -108,81 +149,6 @@ public class ReportRepository : SimpleCrudRepository<Report, Guid>, IReportRepos
         {
             throw new InternalErrorException(ex.Message);
         }
-    }
-
-    public async Task<PaginatedResult<Report>> GetAllAsync(PaginationRequest request)
-    {
-        var sql = """
-            SELECT * FROM reports
-            WHERE deleted = false
-            ORDER BY created DESC
-            OFFSET @Offset ROWS
-            FETCH NEXT @PageSize ROWS ONLY;
-
-            SELECT COUNT(*) FROM reports WHERE deleted = false;
-        """;
-
-        var parameters = new
-        {
-            Offset = (request.PageIndex - 1) * request.PageSize,
-            PageSize = request.PageSize
-        };
-
-        try
-        {
-            using var multi = await _connection.QueryMultipleAsync(sql, parameters);
-            var result = multi.Read<Report>().ToList();
-            var totalRecords = multi.ReadSingle<int>();
-
-            return new PaginatedResult<Report>
-            {
-                Data = result.Count > 0 ? result : new List<Report>(),
-                TotalCount = totalRecords,
-                Page = request.PageIndex,
-                PageSize = request.PageSize
-            };
-        }
-        catch (Exception ex)
-        {
-            throw new InternalErrorException(ex.Message);
-        }
-    }
-
-    public async Task<PaginatedResult<ReportModel>> GetAllAsync(ReportSearch request)
-    {
-        var sql = """
-            SELECT * FROM get_list_of_reports(
-                @page_index, 
-                @page_size, 
-                @searchTerm,
-                @p_report_date,
-                @p_project_id,
-                @p_type
-            );
-        """;
-        var parameters = new
-        {
-            Offset = (request.PageIndex - 1) * request.PageSize,
-            PageSize = request.PageSize
-        };
-        return await GetListWithPaginationAndFilters<ReportSearch, ReportModel>(
-            filter: request,
-            sqlQuery: sql,
-            parameterMapper: filter => new
-            {
-                searchTerm = filter?.SearchTerm,
-                page_index = filter != null ? filter.PageIndex : 1,
-                page_size = filter != null ? filter.PageSize : 20,
-                p_report_date = filter?.P_report_date,
-                p_project_id = filter?.Project_id,
-                p_type = filter?.P_type
-            });
-    }
-
-    public async Task<Report> GetByIdAsync(Guid id)
-    {
-        var result = await base.GetByIdAsync(id);
-        return result;
     }
 
     public async Task<bool> UpdateItemAsync(Guid id, Report entity)

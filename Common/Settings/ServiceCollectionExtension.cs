@@ -21,6 +21,9 @@ public static class ServiceCollectionExtension
     {
         services.AddHttpContextAccessor();
 
+        // Register Lazy<T> support for breaking circular dependencies
+        services.AddTransient(typeof(Lazy<>), typeof(LazyService<>));
+
         //  Register the custom authorization filter
         services.AddScoped<AuthorizationFilter>();
 

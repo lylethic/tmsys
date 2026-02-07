@@ -8,6 +8,7 @@ using server.Application.Request;
 using AutoMapper;
 using server.Common.Interfaces;
 using Medo;
+using server.Application.Search;
 
 namespace server.Repositories;
 
@@ -59,40 +60,24 @@ public class RoleRepository(IDbConnection connection) : SimpleCrudRepository<Rol
         }
     }
 
-    public async Task<PaginatedResult<Role>> GetAllAsync(PaginationRequest request)
+    public async Task<CursorPaginatedResult<Role>> GetAllAsync(BaseSearch request)
     {
-        var sql = """
-            SELECT * FROM roles
-            ORDER BY created DESC
-            OFFSET @Offset ROWS
-            FETCH NEXT @PageSize ROWS ONLY;
-
-            SELECT COUNT(*) FROM roles;
-        """;
-        var parameters = new
+        var where = new List<string>();
+        var param = new DynamicParameters();
+        where.Add("deleted = FALSE");
+        if (!string.IsNullOrEmpty(request.Keyword))
         {
-            Offset = (request.PageIndex - 1) * request.PageSize,
-            PageSize = request.PageSize
-        };
-
-        try
-        {
-            using var multi = await _connection.QueryMultipleAsync(sql, parameters);
-            var result = multi.Read<Role>().ToList();
-            var totalRecords = multi.ReadSingle<int>();
-
-            return new PaginatedResult<Role>
-            {
-                Data = result.Count > 0 ? result : [],
-                TotalCount = totalRecords,
-                Page = request.PageIndex,
-                PageSize = request.PageSize
-            };
+            where.Add("(name ILIKE @Keyword OR description ILIKE @Keyword)");
+            param.Add("Keyword", $"%{request.Keyword}%");
         }
-        catch (Exception ex)
-        {
-            throw new InternalErrorException(ex.Message);
-        }
+        return await this.GetListCursorBasedAsync<Role>(
+           request: request,
+           extraWhere: string.Join(" AND ", where),
+           extraParams: param,
+           orderByColumn: "id",
+           orderDirection: request.Ascending ? "ASC" : "DESC",
+           idColumn: "id"
+         );
     }
 
     public async Task<Role> GetByIdAsync(Guid id)

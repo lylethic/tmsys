@@ -29,7 +29,7 @@ public class ReportsController : BaseApiController
     }
 
     [HttpGet]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN", "READ")]
     public async Task<IActionResult> GetAll([FromQuery] ReportSearch request)
     {
         try
@@ -44,7 +44,7 @@ public class ReportsController : BaseApiController
     }
 
     [HttpGet("{id}")]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN", "READ")]
     public async Task<IActionResult> GetById(Guid id)
     {
         try
@@ -59,7 +59,7 @@ public class ReportsController : BaseApiController
     }
 
     [HttpPost]
-    [RequirePermission("CREATE", "AM_CREATE")]
+    [RequirePermission("SYS_ADMIN", "CREATE")]
     public async Task<IActionResult> Add([FromBody] ReportCreate dto)
     {
         try
@@ -75,7 +75,7 @@ public class ReportsController : BaseApiController
     }
 
     [HttpDelete("{id}")]
-    [RequirePermission("DELETE", "AM_DELETE")]
+    [RequirePermission("SYS_ADMIN", "DELETE")]
     public async Task<IActionResult> Delete(Guid id)
     {
         try
@@ -90,7 +90,7 @@ public class ReportsController : BaseApiController
     }
 
     [HttpPatch("{id}")]
-    [RequirePermission("EDIT", "AM_EDIT")]
+    [RequirePermission("SYS_ADMIN", "EDIT")]
     public async Task<IActionResult> Update(Guid id, [FromBody] ReportUpdate dto)
     {
         try

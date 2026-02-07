@@ -77,7 +77,7 @@ public class PopupRepository : SimpleCrudRepository<Popup, Guid>, IPopup
 
             var orderDirection = request.Ascending ? "ASC" : "DESC";
 
-            return await GetListByIdCursorNoDeleleColAsync<Popup>(
+            return await GetListCursorBasedAsync<Popup>(
                 request: request,
                 extraWhere: string.Join(" AND ", where),
                 extraParams: param,

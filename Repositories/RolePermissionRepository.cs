@@ -3,6 +3,7 @@ using Dapper;
 using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
 using server.Application.Request;
+using server.Application.Search;
 using server.Common.Exceptions;
 using server.Common.Interfaces;
 using server.Domain.Entities;
@@ -35,17 +36,38 @@ public class RolePermissionRepository(IDbConnection connection) : SimpleCrudRepo
         }
     }
 
-    public Task<Role_permissions> AddAsync(Role_permissions entity)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<Role_permissions> GetByIdAsync(Guid id)
     {
         const string sql = "SELECT * FROM role_permissions WHERE permission_id = @Id";
         var result = await _connection.QuerySingleOrDefaultAsync<Role_permissions>(sql, new { Id = id })
             ?? throw new NotFoundException("Role permission not found.");
         return result;
+    }
+
+    public async Task<CursorPaginatedResult<Role_permissions>> GetAllAsync(BaseSearch request)
+    {
+        var where = new List<string>();
+        var param = new DynamicParameters();
+        where.Add("deleted = false");
+        if (request.Keyword is not null)
+        {
+            where.Add("(CAST(role_id AS TEXT) ILIKE @Keyword OR CAST(permission_id AS TEXT) ILIKE @Keyword)");
+            param.Add("Keyword", $"%{request.Keyword}%");
+        }
+
+        return await this.GetListCursorBasedAsync<Role_permissions>(
+           request: request,
+           extraWhere: string.Join(" AND ", where),
+           extraParams: param,
+           orderByColumn: "id",
+           orderDirection: request.Ascending ? "ASC" : "DESC",
+           idColumn: "id"
+         );
+    }
+
+    public Task<Role_permissions> AddAsync(Role_permissions entity)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<bool> DeleteItemAsync(Guid id)
@@ -62,42 +84,6 @@ public class RolePermissionRepository(IDbConnection connection) : SimpleCrudRepo
                 throw new BadRequestException("Failed to delete role permission.");
 
             return true;
-        }
-        catch (Exception ex)
-        {
-            throw new InternalErrorException(ex.Message);
-        }
-    }
-
-    public async Task<PaginatedResult<Role_permissions>> GetAllAsync(PaginationRequest request)
-    {
-        const string sql = """
-            SELECT * FROM role_permissions
-            OFFSET @Offset ROWS
-            FETCH NEXT @PageSize ROWS ONLY;
-
-            SELECT COUNT(*) FROM role_permissions;
-        """;
-
-        var parameters = new
-        {
-            Offset = (request.PageIndex - 1) * request.PageSize,
-            PageSize = request.PageSize
-        };
-
-        try
-        {
-            using var multi = await _connection.QueryMultipleAsync(sql, parameters);
-            var result = multi.Read<Role_permissions>().ToList();
-            var totalRecords = multi.ReadSingle<int>();
-
-            return new PaginatedResult<Role_permissions>
-            {
-                Data = result.Count > 0 ? result : [],
-                TotalCount = totalRecords,
-                Page = request.PageIndex,
-                PageSize = request.PageSize
-            };
         }
         catch (Exception ex)
         {

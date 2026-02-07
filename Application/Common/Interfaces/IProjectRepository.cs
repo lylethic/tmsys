@@ -11,6 +11,7 @@ public interface IProjectRepository
     Task<bool> DeleteItemAsync(Guid id);
     Task<PaginatedResult<Project>> GetAllAsync(PaginationRequest request);
     Task<Project> GetByIdAsync(Guid id);
+    Task<ProjectExtendedModel> GetExtendProjectByIdAsync(Guid id);
     Task<bool> UpdateItemAsync(Guid id, Project entity);
-    Task<PaginatedResult<ProjectModel>> GetAllAsync(ProjectSearch request);
+    Task<CursorPaginatedResult<ProjectModel>> GetAllAsync(ProjectSearch request);
 }

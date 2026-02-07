@@ -15,14 +15,10 @@ namespace server.Repositories
         {
             var sql = """
                 INSERT INTO permissions (id, name, description) VALUES
-                (gen_random_uuid(), 'READ', 'Read permission'),
-                (gen_random_uuid(), 'WRITE', 'Write permission'),
-                (gen_random_uuid(), 'DELETE', 'Delete permission'),
-                (gen_random_uuid(), 'EDIT', 'Update permission'),
-                (gen_random_uuid(), 'AM_READ', 'permission'),
-                (gen_random_uuid(), 'AM_CREATE', 'permission'),
-                (gen_random_uuid(), 'AM_DELETE', 'permission'),
-                (gen_random_uuid(), 'AM_EDIT', 'permission');
+                (generate_uuid_v7(), 'READ', 'Read permission'),
+                (generate_uuid_v7(), 'WRITE', 'Write permission'),
+                (generate_uuid_v7(), 'DELETE', 'Delete permission'),
+                (generate_uuid_v7(), 'EDIT', 'Update permission');
             """;
             await _connection.ExecuteAsync(sql);
         }
@@ -31,9 +27,9 @@ namespace server.Repositories
         {
             var sql = """
                 INSERT INTO roles (id, name, description) VALUES
-                (gen_random_uuid(), 'Admin', 'Administrator role with full permissions'),
-                (gen_random_uuid(), 'User', 'Standard user role with limited permissions'),
-                (gen_random_uuid(), 'Employee', 'staff');
+                (generate_uuid_v7(), 'Admin', 'Administrator role with full permissions'),
+                (generate_uuid_v7(), 'User', 'Standard user role with limited permissions'),
+                (generate_uuid_v7(), 'Employee', 'staff');
             """;
             await _connection.ExecuteAsync(sql);
         }

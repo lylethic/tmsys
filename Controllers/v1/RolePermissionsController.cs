@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using server.Application.Common.Interfaces;
 using server.Application.Request;
+using server.Application.Search;
 using server.Common.Interfaces;
 using server.Common.Settings;
 using server.Domain.Entities;
@@ -26,7 +27,7 @@ public class RolePermissionsController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllAsync([FromQuery] PaginationRequest request)
+    public async Task<IActionResult> GetAllAsync([FromQuery] BaseSearch request)
     {
         try
         {

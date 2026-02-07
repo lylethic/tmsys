@@ -269,80 +269,6 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
         return null; // fallback, no cast
     }
 
-    public async Task<CursorPaginatedResult<T>> GetListByIdCursorAsync(
-        CursorPaginationRequest request,
-        string? extraWhere = null,
-        object? extraParams = null,
-        string idColumn = "id"
-    )
-    {
-        var sql = new StringBuilder();
-        sql.Append("SELECT * FROM ");
-        sql.Append(_dbTableName);
-        sql.Append(" WHERE deleted = false");
-
-        // cursor
-        if (request.Cursor.HasValue)
-        {
-            if (request.Ascending)
-                sql.Append(" AND ").Append(idColumn).Append(" > @Cursor");
-            else
-                sql.Append(" AND ").Append(idColumn).Append(" < @Cursor");
-        }
-
-        // additional filters
-        if (!string.IsNullOrWhiteSpace(extraWhere))
-        {
-            sql.Append(" AND (");
-            sql.Append(extraWhere);
-            sql.Append(')');
-        }
-
-        // ORDER BY + LIMIT
-        sql.Append(" ORDER BY ");
-        sql.Append(idColumn);
-        sql.Append(request.Ascending ? " ASC" : " DESC");
-        sql.Append(" LIMIT @Limit;");
-
-        var param = new DynamicParameters(extraParams);
-        param.Add("Cursor", request.Cursor);
-        param.Add("Limit", request.PageSize + 1);
-
-        // Debug 
-        Console.WriteLine("[SQL] " + sql);
-
-        var list = (await _connection.QueryAsync<T>(sql.ToString(), param)).ToList();
-
-        var result = new CursorPaginatedResult<T>();
-
-        if (list.Count > request.PageSize)
-        {
-            result.HasNextPage = true;
-            var pageData = list.Take(request.PageSize).ToList();
-            result.Data = pageData;
-
-            var lastItem = pageData[^1];
-            var idProp = typeof(T).GetProperty("Id") ?? typeof(T).GetProperty("id");
-            if (idProp is not null)
-                result.NextCursor = (Guid?)idProp.GetValue(lastItem);
-        }
-        else
-        {
-            result.HasNextPage = false;
-            result.Data = list;
-
-            if (list.Count > 0)
-            {
-                var lastItem = list[^1];
-                var idProp = typeof(T).GetProperty("Id") ?? typeof(T).GetProperty("id");
-                if (idProp is not null)
-                    result.NextCursor = (Guid?)idProp.GetValue(lastItem);
-            }
-        }
-
-        return result;
-    }
-
     /// <summary>
     /// Get list with condition and pagination using cursor. Don't get deleted column
     /// </summary>
@@ -353,7 +279,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
     /// <param name="orderDirection"></param>
     /// <param name="idColumn"></param>
     /// <returns></returns>
-    public async Task<CursorPaginatedResult<T>> GetListByIdCursorNoDeleleColAsync<T>(
+    public async Task<CursorPaginatedResult<T>> GetListCursorBasedAsync<T>(
         CursorPaginationRequest request,
         string? extraWhere = null,
         object? extraParams = null,

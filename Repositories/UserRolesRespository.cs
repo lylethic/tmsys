@@ -51,7 +51,7 @@ public class UserRolesRespository(IDbConnection connection) : SimpleCrudReposito
         }
     }
 
-    public async Task<PaginatedResult<User_roles>> GetAllAsync(PaginationRequest request)
+    public Task<PaginatedResult<User_roles>> GetAllAsync(PaginationRequest request)
     {
         throw new NotImplementedException();
     }
@@ -61,7 +61,7 @@ public class UserRolesRespository(IDbConnection connection) : SimpleCrudReposito
         throw new NotImplementedException();
     }
 
-    public async Task<User_roles> GetByIdAsync(Guid id)
+    new public async Task<User_roles> GetByIdAsync(Guid id)
     {
         var sql = "SELECT * FROM user_roles WHERE user_id = @Id";
         var result = await _connection.QuerySingleOrDefaultAsync<User_roles>(sql, new { Id = id })

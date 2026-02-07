@@ -1,9 +1,5 @@
-using System;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using Medo;
-using Microsoft.Extensions.Caching.Memory;
 using server.Application.Common.Interfaces;
 using server.Domain.Entities;
 
@@ -12,17 +8,13 @@ namespace server.Services;
 public class JwtPermissionService : IPermissionService
 {
     private readonly IPermissionRepository _repository;
-    private readonly IMemoryCache _cache;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(30);
 
     public JwtPermissionService(
         IPermissionRepository repository,
-        IMemoryCache cache,
         IHttpContextAccessor httpContextAccessor)
     {
         _repository = repository;
-        _cache = cache;
         _httpContextAccessor = httpContextAccessor;
     }
 
@@ -43,18 +35,8 @@ public class JwtPermissionService : IPermissionService
             }
         }
 
-        // Fallback to database check with caching
-        var cacheKey = $"user_permission_{userId}_{permission}";
-
-        if (_cache.TryGetValue(cacheKey, out bool cachedResult))
-        {
-            return cachedResult;
-        }
-
-        var hasPermission = await _repository.UserHasPermissionAsync(userId, permission);
-        _cache.Set(cacheKey, hasPermission, _cacheExpiration);
-
-        return hasPermission;
+        // Query database directly
+        return await _repository.UserHasPermissionAsync(userId, permission);
     }
 
     public async Task<bool> UserHasRoleAsync(Guid userId, string role)
@@ -74,18 +56,8 @@ public class JwtPermissionService : IPermissionService
             }
         }
 
-        // Fallback to database check with caching
-        var cacheKey = $"user_role_{userId}_{role}";
-
-        if (_cache.TryGetValue(cacheKey, out bool cachedResult))
-        {
-            return cachedResult;
-        }
-
-        var hasRole = await _repository.UserHasRoleAsync(userId, role);
-        _cache.Set(cacheKey, hasRole, _cacheExpiration);
-
-        return hasRole;
+        // Query database directly
+        return await _repository.UserHasRoleAsync(userId, role);
     }
 
     public async Task<List<Permission>> GetUserPermissionsAsync(Guid userId)
@@ -105,18 +77,8 @@ public class JwtPermissionService : IPermissionService
             }
         }
 
-        // Fallback to database
-        var cacheKey = $"user_permissions_{userId}";
-
-        if (_cache.TryGetValue(cacheKey, out List<Permission> cachedPermissions))
-        {
-            return cachedPermissions;
-        }
-
-        var permissions = await _repository.GetUserPermissionsAsync(userId);
-        _cache.Set(cacheKey, permissions, _cacheExpiration);
-
-        return permissions;
+        // Query database directly
+        return await _repository.GetUserPermissionsAsync(userId);
     }
 
     public async Task<List<Role>> GetUserRolesAsync(Guid userId)
@@ -136,17 +98,12 @@ public class JwtPermissionService : IPermissionService
             }
         }
 
-        // Fallback to database
-        var cacheKey = $"user_roles_{userId}";
+        // Query database directly
+        return await _repository.GetUserRolesAsync(userId);
+    }
 
-        if (_cache.TryGetValue(cacheKey, out List<Role> cachedRoles))
-        {
-            return cachedRoles;
-        }
-
-        var roles = await _repository.GetUserRolesAsync(userId);
-        _cache.Set(cacheKey, roles, _cacheExpiration);
-
-        return roles;
+    public async Task<List<Permission>> GetPermissionsByRoleAsync(string roleName)
+    {
+        return await _repository.GetPermissionsByRoleAsync(roleName);
     }
 }

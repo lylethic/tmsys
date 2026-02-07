@@ -1,14 +1,14 @@
-using System;
-using System.Data;
 using Dapper;
 using Medo;
 using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
-using server.Application.Request;
 using server.Application.DTOs;
+using server.Application.Request;
+using server.Application.Request.Search;
 using server.Common.Exceptions;
 using server.Domain.Entities;
 using server.Services;
+using System.Data;
 
 namespace server.Repositories;
 
@@ -20,18 +20,50 @@ public class WorkScheduleRepository : SimpleCrudRepository<Work_schedule, Guid>,
         _assistantService = assistantService;
     }
 
-    public async Task<PaginatedResult<Work_schedule>> GetAllAsync(PaginationRequest request)
+    public async Task<CursorPaginatedResult<Work_schedule>> GetAllAsync(WorkScheduleSearch request)
     {
-        return await GetListWithPagination(request);
+        var where = new List<string>();
+        var param = new DynamicParameters();
+        if (!string.IsNullOrWhiteSpace(request.InternEmail))
+        {
+            where.Add("intern_email ILIKE '%' || @InternEmail || '%'");
+            param.Add("InternEmail", request.InternEmail);
+        }
+        if (!string.IsNullOrWhiteSpace(request.MentorEmail))
+        {
+            where.Add("mentor_email ILIKE '%' || @MentorEmail || '%'");
+            param.Add("MentorEmail", request.MentorEmail);
+        }
+        if (request.WeekStart.HasValue)
+        {
+            where.Add("week_start >= @WeekStart");
+            param.Add("WeekStart", request.WeekStart.Value.ToUniversalTime());
+        }
+        if (request.WeekEnd.HasValue)
+        {
+            where.Add("week_end <= @WeekEnd");
+            param.Add("WeekEnd", request.WeekEnd.Value.ToUniversalTime());
+        }
+
+        var orderDirection = request.Ascending ? "ASC" : "DESC";
+
+        return await this.GetListCursorBasedAsync<Work_schedule>(
+           request: request,
+           extraWhere: string.Join(" AND ", where),
+           extraParams: param,
+           orderByColumn: "id",
+           orderDirection: orderDirection,
+           idColumn: "id"
+         );
     }
 
-    public async Task<IEnumerable<MenteeDto>> GetMenteesByMentorEmailAsync(string mentorEmail, DateTimeOffset? weekStart, DateTimeOffset? weekEnd)
+    public async Task<CursorPaginatedResult<MenteeDto>> GetMenteesByMentorEmailAsync(string mentorEmail, CursorPaginationRequest request, DateTimeOffset? weekStart, DateTimeOffset? weekEnd)
     {
         if (string.IsNullOrWhiteSpace(mentorEmail))
             throw new BadRequestException("Mentor email is required.");
 
         weekStart = weekStart?.ToUniversalTime();
-        weekEnd = weekEnd?.ToUniversalTime();
+        weekEnd = weekEnd?.ToUniversalTime().AddDays(1).AddTicks(-1);
 
         const string sqlMentor = """
             select u.id
@@ -39,7 +71,7 @@ public class WorkScheduleRepository : SimpleCrudRepository<Work_schedule, Guid>,
             join user_roles ur on u.id = ur.user_id
             join roles r on ur.role_id = r.id
             where lower(u.email) = lower(@MentorEmail)
-              and r.name = 'Mentor'
+              -- and r.name = 'Mentor'
               and u.active = true
               and u.deleted = false
             limit 1;
@@ -49,7 +81,18 @@ public class WorkScheduleRepository : SimpleCrudRepository<Work_schedule, Guid>,
         if (!mentorId.HasValue)
             throw new NotFoundException("Mentor not found or role is not Mentor.");
 
-        const string sqlMentees = """
+        var orderDirection = request.Ascending ? "ASC" : "DESC";
+        var pageSize = request.PageSize;
+        var cursorCondition = string.Empty;
+
+        if (request.Cursor.HasValue)
+        {
+            cursorCondition = orderDirection == "ASC"
+                ? "AND ws.id > @Cursor"
+                : "AND ws.id < @Cursor";
+        }
+
+        var sqlMentees = $"""
             select distinct
                 u.id as UserId,
                 coalesce(u.email, ws.intern_email) as Email,
@@ -59,23 +102,44 @@ public class WorkScheduleRepository : SimpleCrudRepository<Work_schedule, Guid>,
                 ws.wednesday,
                 ws.thursday,
                 ws.friday,
-                ws.week_start as Week_start,
-                ws.week_end as Week_end
+                TO_CHAR(ws.week_start, 'YYYY-MM-DD') as Week_start,
+                TO_CHAR(ws.week_end, 'YYYY-MM-DD') as Week_end,
+                ws.id as Id
             from work_schedule ws
             left join users u on ws.intern_id = u.id
             where lower(ws.mentor_email) = lower(@MentorEmail)
-              and (@WeekStart is null or ws.week_start >= @WeekStart)
-              and (@WeekEnd is null or ws.week_end <= @WeekEnd)
+              and (@WeekStart is null or ws.week_end >= @WeekStart)
+              and (@WeekEnd is null or ws.week_start <= @WeekEnd)
               and ws.deleted = false
-              and ws.active = true;
-        """;
+              and ws.active = true
+              {cursorCondition}
+            order by ws.id {orderDirection}
+            limit @PageSize;
+            """;
 
-        return await _connection.QueryAsync<MenteeDto>(sqlMentees, new
+        var mentees = await _connection.QueryAsync<MenteeDto>(sqlMentees, new
         {
             MentorEmail = mentorEmail,
             WeekStart = weekStart,
-            WeekEnd = weekEnd
+            WeekEnd = weekEnd,
+            Cursor = request.Cursor,
+            PageSize = pageSize + 1
         });
+
+        var menteesList = mentees.ToList();
+        var hasNextPage = menteesList.Count > pageSize;
+
+        if (hasNextPage)
+            menteesList = [.. menteesList.Take(pageSize)];
+
+        var nextCursor = hasNextPage ? menteesList.LastOrDefault()?.Id : null;
+
+        return new CursorPaginatedResult<MenteeDto>
+        {
+            Data = menteesList,
+            NextCursor = nextCursor,
+            HasNextPage = hasNextPage
+        };
     }
 
     public async Task<Work_schedule> GetByIdAsync(Guid id)

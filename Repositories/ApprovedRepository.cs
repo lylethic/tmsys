@@ -72,11 +72,11 @@ public class ApprovedRepository : SimpleCrudRepository<Approved_status, Guid>, I
         };
 
         // Call the generic pagination that supports ordering by sort_order + composite cursor
-        return await GetListByIdCursorNoDeleleColAsync<Approved_status>(
+        return await GetListCursorBasedAsync<Approved_status>(
             request: search,
             extraWhere: string.Join(" AND ", where),
             extraParams: param,
-            orderByColumn: "sort_order",
+            orderByColumn: "id",
             orderDirection: orderDirection
         );
     }

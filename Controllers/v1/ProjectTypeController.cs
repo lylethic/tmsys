@@ -29,7 +29,7 @@ public class ProjectTypeController : BaseApiController
         this._mapper = mapper;
     }
     [HttpPost]
-    [RequirePermission("CREATE", "AM_CREATE")]
+    [RequirePermission("SYS_ADMIN", "CREATE")]
     public async Task<IActionResult> CreateAsync(CreateProjectType permission)
     {
         try
@@ -45,7 +45,7 @@ public class ProjectTypeController : BaseApiController
     }
 
     [HttpPatch("id")]
-    [RequirePermission("EDIT", "AM_EDIT")]
+    [RequirePermission("SYS_ADMIN", "EDIT")]
     public async Task<IActionResult> UpdateAsync(Guid id, UpdateProjectType permission)
     {
         try
@@ -61,7 +61,7 @@ public class ProjectTypeController : BaseApiController
     }
 
     [HttpDelete("id")]
-    [RequirePermission("DELETE", "AM_DELETE")]
+    [RequirePermission("SYS_ADMIN", "DELETE")]
     public async Task<IActionResult> DeleteAsync(Guid id)
     {
         try

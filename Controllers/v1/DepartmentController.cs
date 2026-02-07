@@ -28,27 +28,12 @@ namespace server.Controllers.v1
             this._repo = departmentRepo;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateDepartment([FromBody] List<UpSertDepartment> dto)
-        {
-            try
-            {
-                var mapped = _mapper.Map<List<Department>>(dto);
-                var result = await _repo.AddAsync(mapped);
-                return Success(result);
-            }
-            catch (Exception ex)
-            {
-                return Error(ex.Message);
-            }
-        }
-
         [HttpGet("{id}")]
         public async Task<IActionResult> GetByID(Guid id)
         {
             try
             {
-                var result = await _repo.GetByIdAsync(id);
+                var result = await _repo.GetDepartmentTreeByIdAsync(id);
                 return Success(result);
             }
             catch (Exception ex)
@@ -63,6 +48,21 @@ namespace server.Controllers.v1
             try
             {
                 var result = await _repo.GetDepartmentPageAsync(search);
+                return Success(result);
+            }
+            catch (Exception ex)
+            {
+                return Error(ex.Message);
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateDepartment([FromBody] List<UpSertDepartment> dto)
+        {
+            try
+            {
+                var mapped = _mapper.Map<List<Department>>(dto);
+                var result = await _repo.AddAsync(mapped);
                 return Success(result);
             }
             catch (Exception ex)

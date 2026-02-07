@@ -1,13 +1,15 @@
-using System;
 using Asp.Versioning;
 using AutoMapper;
+using Azure.Core;
 using Microsoft.AspNetCore.Mvc;
 using server.Application.Common.Interfaces;
 using server.Application.DTOs;
 using server.Application.Request;
+using server.Application.Request.Search;
 using server.Common.Interfaces;
 using server.Common.Settings;
 using server.Domain.Entities;
+using System;
 
 namespace server.Controllers.v1;
 
@@ -27,7 +29,7 @@ public class WorkScheduleController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] PaginationRequest request)
+    public async Task<IActionResult> GetAll([FromQuery] WorkScheduleSearch request)
     {
         try
         {
@@ -41,11 +43,11 @@ public class WorkScheduleController : BaseApiController
     }
 
     [HttpGet("mentees")]
-    public async Task<IActionResult> GetMentees([FromQuery] string mentorEmail, [FromQuery] DateTimeOffset? weekStart, [FromQuery] DateTimeOffset? weekEnd)
+    public async Task<IActionResult> GetMentees([FromQuery] string mentorEmail, [FromQuery] CursorPaginationRequest request, [FromQuery] DateTimeOffset? weekStart, [FromQuery] DateTimeOffset? weekEnd)
     {
         try
         {
-            var result = await _workScheduleRepo.GetMenteesByMentorEmailAsync(mentorEmail, weekStart, weekEnd);
+            var result = await _workScheduleRepo.GetMenteesByMentorEmailAsync(mentorEmail, request, weekStart, weekEnd);
             return Success(result);
         }
         catch (Exception ex)

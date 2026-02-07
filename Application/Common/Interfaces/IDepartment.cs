@@ -11,5 +11,6 @@ namespace server.Application.Common.Interfaces
     {
         Task<CursorPaginatedResult<DepartmentTreeDto>> GetDepartmentPageAsync(DepartmentSearch request);
         Task<IEnumerable<Department>> AddAsync(List<Department> departments);
+        Task<DepartmentTreeDto> GetDepartmentTreeByIdAsync(Guid id);
     }
 }

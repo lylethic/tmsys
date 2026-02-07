@@ -9,4 +9,5 @@ public interface IPermissionService
     Task<bool> UserHasRoleAsync(Guid userId, string role);
     Task<List<Permission>> GetUserPermissionsAsync(Guid userId);
     Task<List<Role>> GetUserRolesAsync(Guid userId);
+    Task<List<Permission>> GetPermissionsByRoleAsync(string roleName);
 }

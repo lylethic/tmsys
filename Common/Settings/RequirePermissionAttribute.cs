@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using server.Application.Common.Interfaces;
 
 namespace server.Common.Settings;
@@ -24,26 +23,42 @@ public class RequirePermissionAttribute : Attribute, IAuthorizationFilter
             return;
         }
 
-        var permissionClaims = user.FindAll("permission").Select(c => c.Value).ToList();
-        if (_permissions.Any(p => permissionClaims.Contains(p)))
-        {
-            return;
-        }
-
-        // Fallback to service check
         var permissionService = context.HttpContext.RequestServices.GetService<IPermissionService>();
-        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        if (permissionService == null)
         {
             context.Result = new UnauthorizedResult();
             return;
         }
 
-        var hasAnyPermission = _permissions.Any(p => permissionService.UserHasPermissionAsync(userId, p).Result);
-        if (!hasAnyPermission)
+        try
         {
+            var userPermissions = GetPermissionsFromRoles(user, permissionService);
+
+            if (_permissions.Any(p => userPermissions.Contains(p)))
+            {
+                return;
+            }
+
             context.Result = new ForbidResult();
         }
+        catch
+        {
+            context.Result = new UnauthorizedResult();
+        }
+    }
+
+    private static List<string> GetPermissionsFromRoles(ClaimsPrincipal user, IPermissionService permService)
+    {
+        var roles = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        if (roles.Count == 0) return [];
+
+        var permissions = new HashSet<string>();
+        foreach (var role in roles)
+        {
+            var rolePermissions = permService.GetPermissionsByRoleAsync(role).Result;
+            foreach (var perm in rolePermissions)
+                permissions.Add(perm.Name);
+        }
+        return [.. permissions];
     }
 }

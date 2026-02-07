@@ -104,6 +104,13 @@ namespace server.Repositories
             return true;
         }
 
+        public async Task<DepartmentTreeDto> GetDepartmentTreeByIdAsync(Guid id)
+        {
+            var allDepartments = await GetDepartmentsWithDescendantsAsync([id]);
+            var treeData = BuildDepartmentTree(allDepartments, [id]);
+            return treeData.FirstOrDefault();
+        }
+
         public async Task<CursorPaginatedResult<DepartmentTreeDto>> GetDepartmentPageAsync(DepartmentSearch request)
         {
             var where = new List<string>();
@@ -113,7 +120,7 @@ namespace server.Repositories
                 where.Add("code ILIKE '%' || @Keyword || '%' OR name ILIKE '%' || @Keyword || '%'");
                 param.Add("Keyword", request.Keyword);
             }
-            var result = await GetListByIdCursorNoDeleleColAsync<Department>(
+            var result = await GetListCursorBasedAsync<Department>(
                 request: request,
                 extraWhere: string.Join(" AND ", where),
                 extraParams: param
@@ -164,7 +171,7 @@ namespace server.Repositories
             """;
 
             var result = await _connection.QueryAsync<Department>(sql, new { RootIds = rootIds.ToArray() });
-            return result.ToList();
+            return [.. result];
         }
 
         private static List<DepartmentTreeDto> BuildDepartmentTree(List<Department> departments, List<Guid> rootIds)

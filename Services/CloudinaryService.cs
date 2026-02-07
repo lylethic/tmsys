@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using server.Application.Common.Interfaces;
 using server.Application.Enums;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Common.Models;
 using server.Domain.Entities;
 
@@ -14,7 +15,7 @@ public class CloudinaryService : ICloudinaryService
 {
     private readonly Cloudinary _cloudinary;
     private readonly CloudinarySettings _settings;
-    private readonly ILogger<CloudinaryService> _logger;
+    private readonly ILogManager _logger;
     private readonly IMediaAssetRepository _mediaAssetRepository;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAssistantService _assistantService;
@@ -22,7 +23,7 @@ public class CloudinaryService : ICloudinaryService
     public CloudinaryService(
         Cloudinary cloudinary,
         IOptions<CloudinarySettings> settings,
-        ILogger<CloudinaryService> logger,
+        ILogManager logger,
         IMediaAssetRepository mediaAssetRepository,
         IHttpContextAccessor httpContextAccessor,
         IAssistantService assistantService
@@ -55,7 +56,7 @@ public class CloudinaryService : ICloudinaryService
                 throw new BadRequestException("Invalid file");
             }
 
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".jfif" };
             var fileExtension = Path.GetExtension(file.FileName).ToLower();
 
             if (!allowedExtensions.Contains(fileExtension))
@@ -115,11 +116,11 @@ public class CloudinaryService : ICloudinaryService
 
             if (uploadResult.Error != null)
             {
-                _logger.LogError($"Cloudinary upload error: {uploadResult.Error.Message}");
+                _logger.Error($"Cloudinary upload error: {uploadResult.Error.Message}");
                 throw new BadRequestException($"Upload failed: {uploadResult.Error.Message}");
             }
 
-            _logger.LogInformation($"Upload successful to Cloudinary: {uploadResult.PublicId}");
+            _logger.Info($"Upload successful to Cloudinary: {uploadResult.PublicId}");
 
             // Save to database
             var currentUserId = Guid.Parse(_assistantService.UserId);
@@ -145,7 +146,7 @@ public class CloudinaryService : ICloudinaryService
             };
 
             var savedAsset = await _mediaAssetRepository.CreateAsync(mediaAsset);
-            _logger.LogInformation($"Media asset saved to database with ID: {savedAsset.id}");
+            _logger.Info($"Media asset saved to database with ID: {savedAsset.id}");
 
             // Return result
             return new CloudinaryUploadResult
@@ -163,7 +164,7 @@ public class CloudinaryService : ICloudinaryService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error uploading image to Cloudinary");
+            _logger.Error($"Error uploading image to Cloudinary {ex}");
             throw;
         }
     }
@@ -244,7 +245,7 @@ public class CloudinaryService : ICloudinaryService
 
                     if (uploadResult.Error != null)
                     {
-                        _logger.LogError($"Failed to upload {file.FileName}: {uploadResult.Error.Message}");
+                        _logger.Error($"Failed to upload {file.FileName}: {uploadResult.Error.Message}");
                         continue;
                     }
 
@@ -286,7 +287,7 @@ public class CloudinaryService : ICloudinaryService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Failed to upload file: {file.FileName}");
+                    _logger.Error($"Failed to upload file: {file.FileName}, {ex}");
                     continue;
                 }
             }
@@ -295,14 +296,14 @@ public class CloudinaryService : ICloudinaryService
             if (mediaAssets.Any())
             {
                 await _mediaAssetRepository.CreateMultipleAsync(mediaAssets);
-                _logger.LogInformation($"Saved {mediaAssets.Count} media assets to database");
+                _logger.Info($"Saved {mediaAssets.Count} media assets to database");
             }
 
             return results;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error uploading multiple images");
+            _logger.Error($"Error uploading multiple images: {ex}");
             throw;
         }
     }
@@ -329,7 +330,7 @@ public class CloudinaryService : ICloudinaryService
 
             if (result.Result == "ok" || result.Result == "not found")
             {
-                _logger.LogInformation($"Image deleted from Cloudinary: {publicId}");
+                _logger.Info($"Image deleted from Cloudinary: {publicId}");
 
                 if (hardDelete)
                 {
@@ -337,24 +338,24 @@ public class CloudinaryService : ICloudinaryService
                     if (mediaAsset != null)
                     {
                         await _mediaAssetRepository.HardDeleteAsync(mediaAsset.id);
-                        _logger.LogInformation($"Media asset hard deleted from database: {publicId}");
+                        _logger.Info($"Media asset hard deleted from database: {publicId}");
                     }
                 }
                 else
                 {
                     await _mediaAssetRepository.SoftDeleteByPublicIdAsync(publicId);
-                    _logger.LogInformation($"Media asset soft deleted in database: {publicId}");
+                    _logger.Info($"Media asset soft deleted in database: {publicId}");
                 }
 
                 return true;
             }
 
-            _logger.LogWarning($"Failed to delete image: {publicId}. Result: {result.Result}");
+            _logger.Warn($"Failed to delete image: {publicId}. Result: {result.Result}");
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error deleting image: {publicId}");
+            _logger.Error($"Error deleting image: {publicId}, {ex}");
             throw;
         }
     }
@@ -385,7 +386,7 @@ public class CloudinaryService : ICloudinaryService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Failed to delete image: {publicId}");
+                    _logger.Error($"Failed to delete image: {publicId}, {ex}");
                     allSuccess = false;
                 }
             }
@@ -394,7 +395,7 @@ public class CloudinaryService : ICloudinaryService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting multiple images");
+            _logger.Error($"Error deleting multiple images: {ex}");
             throw;
         }
     }
@@ -457,7 +458,7 @@ public class CloudinaryService : ICloudinaryService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error getting image info: {publicId}");
+            _logger.Error($"Error getting image info: {publicId}, {ex}");
             throw;
         }
     }
@@ -488,7 +489,7 @@ public class CloudinaryService : ICloudinaryService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, $"Failed to delete old image: {oldPublicId}");
+                    _logger.Warn($"Failed to delete old image: {oldPublicId}, {ex}");
                 }
             }
 
@@ -496,7 +497,7 @@ public class CloudinaryService : ICloudinaryService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating image");
+            _logger.Error($"Error updating image: {ex}");
             throw;
         }
     }

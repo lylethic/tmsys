@@ -1,4 +1,3 @@
-using System.Data;
 using Dapper;
 using Medo;
 using Microsoft.CodeAnalysis.Elfie.Serialization;
@@ -6,9 +5,11 @@ using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
 using server.Application.Models;
 using server.Application.Request;
+using server.Application.Request.Search;
 using server.Common.Exceptions;
 using server.Domain.Entities;
 using server.Services;
+using System.Data;
 
 namespace server.Repositories;
 
@@ -122,42 +123,59 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
         }
     }
 
-    public async Task<PaginatedResult<Tasks>> GetAllAsync(PaginationRequest request)
+    public async Task<CursorPaginatedResult<Tasks>> GetAllAsync(TaskSearch request)
     {
-        var sql = @"
-            SELECT * FROM tasks
-            WHERE deleted = false
-            ORDER BY created DESC
-            OFFSET @Offset ROWS
-            FETCH NEXT @PageSize ROWS ONLY;
-
-            SELECT COUNT(*) FROM tasks WHERE deleted = false;
-        ";
-
-        var parameters = new
+        var where = new List<string>();
+        var param = new DynamicParameters();
+        where.Add("deleted = false");
+        if (request.ProjectId != null)
         {
-            Offset = (request.PageIndex - 1) * request.PageSize,
-            PageSize = request.PageSize
-        };
-
-        try
-        {
-            using var multi = await _connection.QueryMultipleAsync(sql, parameters);
-            var result = multi.Read<Tasks>().ToList();
-            var totalRecords = multi.ReadSingle<int>();
-
-            return new PaginatedResult<Tasks>
-            {
-                Data = result.Count > 0 ? result : new List<Tasks>(),
-                TotalCount = totalRecords,
-                Page = request.PageIndex,
-                PageSize = request.PageSize
-            };
+            where.Add("project_id = @ProjectId");
+            param.Add("ProjectId", request.ProjectId);
         }
-        catch (Exception ex)
+        if (request.AssignedTo != null)
         {
-            throw new InternalErrorException(ex.Message);
+            where.Add("assigned_to = @AssignedTo");
+            param.Add("AssignedTo", request.AssignedTo);
         }
+        if (request.Status != null)
+        {
+            where.Add("status = @Status");
+            param.Add("Status", request.Status);
+        }
+        if (request.DueDate != null)
+        {
+            where.Add("due_date = @DueDate");
+            param.Add("DueDate", request.DueDate);
+        }
+        if (request.AllowLate != null)
+        {
+            where.Add("allow_late = @AllowLate");
+            param.Add("AllowLate", request.AllowLate);
+        }
+        if (request.AllowResubmit != null)
+        {
+            where.Add("allow_resubmit = @AllowResubmit");
+            param.Add("AllowResubmit", request.AllowResubmit);
+        }
+        if (request.PassPoint != null)
+        {
+            where.Add("pass_point = @PassPoint");
+            param.Add("PassPoint", request.PassPoint);
+        }
+        if (request.CompletedAt != null)
+        {
+            where.Add("completed_at = @CompletedAt");
+            param.Add("CompletedAt", request.CompletedAt);
+        }
+        var page = await this.GetListCursorBasedAsync<Tasks>(
+            request: request,
+            extraWhere: string.Join(" AND ", where),
+            extraParams: param,
+            orderByColumn: "id",
+            idColumn: "id"
+         );
+        return page;
     }
 
     public override async Task<Tasks> GetByIdAsync(Guid id)

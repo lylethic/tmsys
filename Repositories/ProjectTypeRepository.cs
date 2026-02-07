@@ -45,26 +45,31 @@ public class ProjectTypeRepository(IDbConnection connection, IAssistantService a
         return true;
     }
 
-    public async Task<PaginatedResult<ProjectTypeModel>> GetAllAsync(BaseSearch request)
+    public async Task<CursorPaginatedResult<ProjectTypeModel>> GetAllAsync(BaseSearch request)
     {
-        var sql = """
-            SELECT * FROM public.get_list_of_project_types (
-                @page_index,
-                @page_size,
-                @search_term,
-                @order_by
-            );
-        """;
-        return await GetListWithPaginationAndFilters<BaseSearch, ProjectTypeModel>(
-            filter: request,
-            sqlQuery: sql,
-            parameterMapper: filter => new
-            {
-                search_term = filter?.SearchTerm,
-                page_index = filter != null ? filter.PageIndex : 1,
-                page_size = filter != null ? filter.PageSize : 20,
-                order_by = filter != null ? filter.OrderBy : 1
-            });
+        var where = new List<string>();
+        var param = new DynamicParameters();
+        where.Add("deleted = false");
+        if (request.Keyword is not null)
+        {
+            where.Add("(name ILIKE @Keyword OR description ILIKE @Keyword)");
+            param.Add("Keyword", $"%{request.Keyword}%");
+        }
+        var page = await this.GetListCursorBasedAsync<ProjectTypeModel>(
+            request: request,
+            extraWhere: string.Join(" AND ", where),
+            extraParams: param,
+            orderByColumn: "id",
+            idColumn: "id"
+        );
+        var result = new CursorPaginatedResult<ProjectTypeModel>
+        {
+            NextCursor = page.NextCursor,
+            Data = page.Data,
+            HasNextPage = page.HasNextPage,
+            Total = page.Total
+        };
+        return result;
     }
 
     public async Task<PaginatedResult<ProjectType>> GetAllAsync(PaginationRequest request)

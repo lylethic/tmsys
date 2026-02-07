@@ -9,5 +9,5 @@ namespace server.Application.Common.Interfaces;
 
 public interface IProjectTypeRepository : IRepository<ProjectType>
 {
-    Task<PaginatedResult<ProjectTypeModel>> GetAllAsync(BaseSearch request);
+    Task<CursorPaginatedResult<ProjectTypeModel>> GetAllAsync(BaseSearch request);
 }

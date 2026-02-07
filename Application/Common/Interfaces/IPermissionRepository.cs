@@ -15,4 +15,5 @@ public interface IPermissionRepository
     Task<Permission> AddAsync(Permission permission);
     Task<Permission> UpdateAsync(Guid id, Permission permission);
     Task<string> DeleteAsync(Guid id);
+    Task<List<Permission>> GetPermissionsByRoleAsync(string roleName);
 }

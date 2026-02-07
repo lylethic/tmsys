@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using server.Application.Common.Interfaces;
 using server.Application.DTOs;
 using server.Application.Request;
+using server.Application.Search;
 using server.Common.Interfaces;
 using server.Common.Settings;
 using server.Domain.Entities;
@@ -27,8 +28,8 @@ public class RolesController : BaseApiController
     }
 
     [HttpGet]
-    [RequirePermission("READ", "AM_READ")]
-    public async Task<IActionResult> GetAll([FromQuery] PaginationRequest request)
+    [RequirePermission("SYS_ADMIN", "READ")]
+    public async Task<IActionResult> GetAll([FromQuery] BaseSearch request)
     {
         try
         {
@@ -42,7 +43,7 @@ public class RolesController : BaseApiController
     }
 
     [HttpGet("id")]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN", "READ")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _roleRepo.GetByIdAsync(id);
@@ -50,7 +51,7 @@ public class RolesController : BaseApiController
     }
 
     [HttpPost]
-    [RequirePermission("CREATE", "AM_CREATE")]
+    [RequirePermission("SYS_ADMIN", "CREATE")]
     public async Task<IActionResult> Add(RoleDto dto)
     {
         try
@@ -66,7 +67,7 @@ public class RolesController : BaseApiController
     }
 
     [HttpDelete("id")]
-    [RequirePermission("DELETE", "AM_DELETE")]
+    [RequirePermission("SYS_ADMIN", "DELETE")]
     public async Task<IActionResult> Delete(Guid id)
     {
         try
@@ -81,7 +82,7 @@ public class RolesController : BaseApiController
     }
 
     [HttpPatch("id")]
-    [RequirePermission("EDIT", "AM_EDIT")]
+    [RequirePermission("SYS_ADMIN", "EDIT")]
     public async Task<IActionResult> Update(Guid id, RoleDto dto)
     {
         try

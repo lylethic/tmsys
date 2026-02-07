@@ -26,31 +26,25 @@ public class JwtPermissionHandler : AuthorizationHandler<PermissionRequirement>
             return;
         }
 
-        // First check JWT claims directly (fastest)
-        var permissionClaims = user.FindAll("permission").Select(c => c.Value);
-        if (permissionClaims.Contains(requirement.Permission))
-        {
-            context.Succeed(requirement);
-            return;
-        }
-
-        // Fallback to service check
-        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        // Get user's roles from JWT claims
+        var roleNames = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        if (!roleNames.Any())
         {
             context.Fail();
             return;
         }
 
-        var hasPermission = await _permissionService.UserHasPermissionAsync(userId, requirement.Permission);
+        // Check if any of the user's roles contains the required permission
+        foreach (var roleName in roleNames)
+        {
+            var permissions = await _permissionService.GetPermissionsByRoleAsync(roleName);
+            if (permissions.Any(p => p.Name == requirement.Permission))
+            {
+                context.Succeed(requirement);
+                return;
+            }
+        }
 
-        if (hasPermission)
-        {
-            context.Succeed(requirement);
-        }
-        else
-        {
-            context.Fail();
-        }
+        context.Fail();
     }
 }

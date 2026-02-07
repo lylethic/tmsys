@@ -1,5 +1,3 @@
-using System;
-using System.Security;
 using Asp.Versioning;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +26,7 @@ public class PermissionController : BaseApiController
     }
 
     [HttpPost]
-    [RequirePermission("CREATE", "AM_CREATE")]
+    [RequirePermission("SYS_ADMIN")]
     public async Task<IActionResult> CreateAsync(Permission permission)
     {
         var result = await _permission.AddAsync(permission);
@@ -36,7 +34,7 @@ public class PermissionController : BaseApiController
     }
 
     [HttpPatch("id")]
-    [RequirePermission("EDIT", "AM_EDIT")]
+    [RequirePermission("SYS_ADMIN")]
     public async Task<IActionResult> UpdateAsync(Guid id, Permission permission)
     {
         var result = await _permission.UpdateAsync(id, permission);
@@ -44,7 +42,7 @@ public class PermissionController : BaseApiController
     }
 
     [HttpDelete("id")]
-    [RequirePermission("DELETE", "AM_DELETE")]
+    [RequirePermission("SYS_ADMIN")]
     public async Task<IActionResult> DeleteAsync(Guid id)
     {
         try
@@ -59,7 +57,7 @@ public class PermissionController : BaseApiController
     }
 
     [HttpGet("{userId}")]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN")]
     public async Task<IActionResult> GetUserPermissionsAsync(Guid userId)
     {
         try
@@ -74,7 +72,7 @@ public class PermissionController : BaseApiController
     }
 
     [HttpGet("user-role/{id}")]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN")]
     public async Task<IActionResult> GetUserRolesAsync(Guid id)
     {
         try
@@ -89,7 +87,7 @@ public class PermissionController : BaseApiController
     }
 
     [HttpGet("user-permissions/{id}")]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN")]
     public async Task<IActionResult> GetUserWithRolesAndPermissionsAsync(Guid id)
     {
         try
@@ -104,7 +102,7 @@ public class PermissionController : BaseApiController
     }
 
     [HttpGet]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN")]
     public async Task<IActionResult> GetPermissionsAsync([FromQuery] PaginationRequest request)
     {
         try

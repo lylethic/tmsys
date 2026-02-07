@@ -28,7 +28,7 @@ public class ProgressUpdatesController : BaseApiController
     }
 
     [HttpGet]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN", "READ")]
     public async Task<IActionResult> GetAll([FromQuery] PaginationRequest request)
     {
         try
@@ -43,7 +43,7 @@ public class ProgressUpdatesController : BaseApiController
     }
 
     [HttpGet("{id}")]
-    [RequirePermission("READ", "AM_READ")]
+    [RequirePermission("SYS_ADMIN", "READ")]
     public async Task<IActionResult> GetById(Guid id)
     {
         try
@@ -58,7 +58,7 @@ public class ProgressUpdatesController : BaseApiController
     }
 
     [HttpPost]
-    [RequirePermission("CREATE", "AM_CREATE")]
+    [RequirePermission("SYS_ADMIN", "CREATE")]
     public async Task<IActionResult> Add([FromBody] ProgressUpdateCreate dto)
     {
         try
@@ -74,7 +74,7 @@ public class ProgressUpdatesController : BaseApiController
     }
 
     [HttpDelete("{id}")]
-    [RequirePermission("DELETE", "AM_DELETE")]
+    [RequirePermission("SYS_ADMIN", "DELETE")]
     public async Task<IActionResult> Delete(Guid id)
     {
         try
@@ -89,7 +89,7 @@ public class ProgressUpdatesController : BaseApiController
     }
 
     [HttpPatch("{id}")]
-    [RequirePermission("EDIT", "AM_EDIT")]
+    [RequirePermission("SYS_ADMIN", "EDIT")]
     public async Task<IActionResult> Update(Guid id, [FromBody] ProgressUpdateUpdate dto)
     {
         try

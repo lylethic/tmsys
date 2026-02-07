@@ -91,8 +91,10 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
             foreach (var role in userRolesAndPermissions.Roles)
                 claims.Add(new Claim(ClaimTypes.Role, role.Name));
 
-            foreach (var permission in userRolesAndPermissions.Permissions)
-                claims.Add(new Claim("permission", permission.Name));
+            // Permission claims are NOT added to JWT to keep token size small
+            // The RequirePermissionAttribute will use IPermissionService fallback for database lookup
+            // foreach (var permission in userRolesAndPermissions.Permissions)
+            //     claims.Add(new Claim("permission", permission.Name));
 
             var expiryHoursStr = _config["JwtSettings:AccessTokenExpirationHours"];
             var refreshExpiryHoursStr = _config["JwtSettings:RefreshTokenExpirationMonths"];
