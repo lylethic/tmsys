@@ -34,7 +34,7 @@ public class StatisticsController : BaseApiController
     // ════════════════════════════════════════════
 
     /// <summary>
-    /// Dashboard tổng hợp: task + attendance (30 ngày) + work schedule.
+    /// Comprehensive dashboard: task + attendance (30 days) + work schedule.
     /// </summary>
     [HttpGet("dashboard")]
     public async Task<IActionResult> GetDashboard()
@@ -55,9 +55,9 @@ public class StatisticsController : BaseApiController
     // ════════════════════════════════════════════
 
     /// <summary>
-    /// Tổng quan tasks: tổng số, phân theo status, quá hạn, hoàn thành đúng/trễ hạn, trung bình ngày hoàn thành.
+    /// Task overview: total, by status, overdue, completed on-time/late, average completion days.
     /// </summary>
-    /// <param name="projectId">Lọc theo project (optional).</param>
+    /// <param name="projectId">Filter by project (optional).</param>
     [HttpGet("tasks/overview")]
     public async Task<IActionResult> GetTaskOverview([FromQuery] Guid? projectId)
     {
@@ -73,9 +73,9 @@ public class StatisticsController : BaseApiController
     }
 
     /// <summary>
-    /// Thống kê task theo từng thành viên: tổng task, completed, in-progress, overdue, điểm TB, tỷ lệ on-time.
+    /// Task statistics by member: total tasks, completed, in-progress, overdue, average score, on-time rate.
     /// </summary>
-    /// <param name="projectId">Lọc theo project (optional).</param>
+    /// <param name="projectId">Filter by project (optional).</param>
     /// <param name="cursor">Cursor for pagination (user ID from previous page).</param>
     /// <param name="pageSize">Number of items per page (default 20).</param>
     /// <param name="ascending">Sort order (default false - descending by ID).</param>
@@ -98,7 +98,7 @@ public class StatisticsController : BaseApiController
     }
 
     /// <summary>
-    /// Thống kê task theo từng project: tổng task, completed, in-progress, overdue, tỷ lệ hoàn thành.
+    /// Task statistics by project: total tasks, completed, in-progress, overdue, completion rate.
     /// </summary>
     [HttpGet("tasks/by-project")]
     public async Task<IActionResult> GetProjectTaskStats()
@@ -119,10 +119,10 @@ public class StatisticsController : BaseApiController
     // ════════════════════════════════════════════
 
     /// <summary>
-    /// Tổng quan điểm danh: tổng check-in, hợp lệ/không hợp lệ, tỷ lệ, unique users, trend theo ngày.
+    /// Attendance overview: total check-ins, valid/invalid, rate, unique users, daily trend.
     /// </summary>
-    /// <param name="from">Ngày bắt đầu (yyyy-MM-dd).</param>
-    /// <param name="to">Ngày kết thúc (yyyy-MM-dd).</param>
+    /// <param name="from">Start date (yyyy-MM-dd).</param>
+    /// <param name="to">End date (yyyy-MM-dd).</param>
     [HttpGet("attendance/overview")]
     public async Task<IActionResult> GetAttendanceOverview([FromQuery] string? from, [FromQuery] string? to)
     {
@@ -151,10 +151,10 @@ public class StatisticsController : BaseApiController
     }
 
     /// <summary>
-    /// Thống kê điểm danh theo từng thành viên: tổng check-in, hợp lệ, tỷ lệ, số ngày làm việc, tỷ lệ đi làm.
+    /// Attendance statistics by member: total check-ins, valid, rate, working days, attendance rate.
     /// </summary>
-    /// <param name="from">Ngày bắt đầu (yyyy-MM-dd).</param>
-    /// <param name="to">Ngày kết thúc (yyyy-MM-dd).</param>
+    /// <param name="from">Start date (yyyy-MM-dd).</param>
+    /// <param name="to">End date (yyyy-MM-dd).</param>
     /// <param name="cursor">Cursor for pagination (user ID from previous page).</param>
     /// <param name="pageSize">Number of items per page (default 20).</param>
     /// <param name="ascending">Sort order (default false - descending by ID).</param>
@@ -195,10 +195,10 @@ public class StatisticsController : BaseApiController
     // ════════════════════════════════════════════
 
     /// <summary>
-    /// Tổng quan lịch làm việc: phân bổ ngày trong tuần, tổng intern, tổng mentor.
+    /// Work schedule overview: day distribution in week, total interns, total mentors.
     /// </summary>
-    /// <param name="weekStart">Tuần bắt đầu (optional).</param>
-    /// <param name="weekEnd">Tuần kết thúc (optional).</param>
+    /// <param name="weekStart">Week start (optional).</param>
+    /// <param name="weekEnd">Week end (optional).</param>
     [HttpGet("schedule/overview")]
     public async Task<IActionResult> GetWorkScheduleOverview(
         [FromQuery] DateTimeOffset? weekStart,
@@ -216,7 +216,7 @@ public class StatisticsController : BaseApiController
     }
 
     /// <summary>
-    /// Thống kê mentor load: mỗi mentor quản lý bao nhiêu intern.
+    /// Mentor load statistics: how many interns each mentor manages.
     /// </summary>
     [HttpGet("schedule/mentor-load")]
     public async Task<IActionResult> GetMentorLoad()

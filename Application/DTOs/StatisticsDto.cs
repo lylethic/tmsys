@@ -8,7 +8,7 @@ namespace server.Application.DTOs;
 // ──────────────────────────────────────────────
 
 /// <summary>
-/// Tổng quan về tasks: tổng số, phân theo trạng thái, quá hạn, trung bình điểm.
+/// Task overview: total, by status, overdue, average score.
 /// </summary>
 public class TaskOverviewDto
 {
@@ -41,7 +41,7 @@ public class StatusCountDto
 }
 
 /// <summary>
-/// Thống kê task theo từng thành viên.
+/// Task statistics by member.
 /// </summary>
 public class MemberTaskStatsDto
 {
@@ -74,7 +74,7 @@ public class MemberTaskStatsDto
 }
 
 /// <summary>
-/// Thống kê task theo project.
+/// Task statistics by project.
 /// </summary>
 public class ProjectTaskStatsDto
 {
@@ -105,7 +105,7 @@ public class ProjectTaskStatsDto
 // ──────────────────────────────────────────────
 
 /// <summary>
-/// Tổng quan điểm danh: tổng check-in, hợp lệ, không hợp lệ, theo ngày.
+/// Attendance overview: total check-ins, valid, invalid, by day.
 /// </summary>
 public class AttendanceOverviewDto
 {
@@ -144,7 +144,7 @@ public class DailyCheckinDto
 }
 
 /// <summary>
-/// Thống kê điểm danh theo từng thành viên.
+/// Attendance statistics by member.
 /// </summary>
 public class MemberAttendanceStatsDto
 {
@@ -181,7 +181,7 @@ public class MemberAttendanceStatsDto
 // ──────────────────────────────────────────────
 
 /// <summary>
-/// Tổng quan lịch làm việc: phân bổ thứ, tổng intern đăng ký, mentor load.
+/// Work schedule overview: day distribution, total registered interns, mentor load.
 /// </summary>
 public class WorkScheduleOverviewDto
 {
@@ -213,7 +213,7 @@ public class DayDistributionDto
 }
 
 /// <summary>
-/// Thống kê mentor load: mỗi mentor quản lý bao nhiêu intern.
+/// Mentor load statistics: how many interns each mentor manages.
 /// </summary>
 public class MentorLoadDto
 {
@@ -225,11 +225,11 @@ public class MentorLoadDto
 }
 
 // ──────────────────────────────────────────────
-// 4. DASHBOARD TỔNG HỢP
+// 4. COMPREHENSIVE DASHBOARD
 // ──────────────────────────────────────────────
 
 /// <summary>
-/// Dashboard tổng hợp tất cả thống kê chính.
+/// Comprehensive dashboard of all main statistics.
 /// </summary>
 public class DashboardDto
 {

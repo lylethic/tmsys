@@ -6,7 +6,7 @@ using System.Data;
 namespace server.Repositories;
 
 /// <summary>
-/// Repository chứa các truy vấn thống kê cho Tasks, Attendance, Work Schedule.
+/// Repository containing statistical queries for Tasks, Attendance, Work Schedule.
 /// </summary>
 public class StatisticsRepository
 {
@@ -22,7 +22,7 @@ public class StatisticsRepository
     // ════════════════════════════════════════════
 
     /// <summary>
-    /// Tổng quan tasks: tổng số, phân theo status, quá hạn, hoàn thành đúng/trễ, trung bình ngày hoàn thành.
+    /// Task overview: total, by status, overdue, completed on-time/late, average completion days.
     /// </summary>
     public async Task<TaskOverviewDto> GetTaskOverviewAsync(Guid? projectId = null)
     {
@@ -41,7 +41,7 @@ public class StatisticsRepository
         """;
         var statusCounts = (await _connection.QueryAsync<StatusCountDto>(statusSql, param)).ToList();
 
-        // Overdue (chưa hoàn thành và quá hạn)
+        // Overdue (not completed and past due date)
         var overdueSql = $"""
             SELECT COUNT(*) FROM tasks
             WHERE deleted = false AND active = true
@@ -51,7 +51,7 @@ public class StatisticsRepository
         """;
         var overdue = await _connection.ExecuteScalarAsync<int>(overdueSql, param);
 
-        // Hoàn thành đúng hạn vs trễ hạn
+        // Completed on-time vs late
         var completionSql = $"""
             SELECT
                 COUNT(*) FILTER (WHERE completed_at IS NOT NULL AND completed_at <= due_date) AS on_time,
@@ -63,7 +63,7 @@ public class StatisticsRepository
         """;
         var completion = await _connection.QuerySingleAsync<dynamic>(completionSql, param);
 
-        // Trung bình số ngày hoàn thành
+        // Average completion days
         var avgDaysSql = $"""
             SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (completed_at - created)) / 86400), 0)
             FROM tasks
@@ -73,7 +73,7 @@ public class StatisticsRepository
         """;
         var avgDays = await _connection.ExecuteScalarAsync<double>(avgDaysSql, param);
 
-        // Tổng
+        // Total
         var totalSql = $"""
             SELECT COUNT(*) FROM tasks
             WHERE deleted = false AND active = true {projectFilter}
@@ -92,7 +92,7 @@ public class StatisticsRepository
     }
 
     /// <summary>
-    /// Thống kê task theo từng thành viên (có thể lọc theo project).
+    /// Task statistics by member (can filter by project).
     /// </summary>
     public async Task<CursorPaginatedResult<MemberTaskStatsDto>> GetMemberTaskStatsAsync(
         Guid? projectId = null, Guid? cursor = null, int pageSize = 20, bool ascending = false)
@@ -160,7 +160,7 @@ public class StatisticsRepository
     }
 
     /// <summary>
-    /// Thống kê task theo từng project.
+    /// Task statistics by project.
     /// </summary>
     public async Task<List<ProjectTaskStatsDto>> GetProjectTaskStatsAsync()
     {
@@ -199,7 +199,7 @@ public class StatisticsRepository
     // ════════════════════════════════════════════
 
     /// <summary>
-    /// Tổng quan điểm danh trong khoảng thời gian, kèm trend theo ngày.
+    /// Attendance overview in time range, with daily trend.
     /// </summary>
     public async Task<AttendanceOverviewDto> GetAttendanceOverviewAsync(DateOnly? from, DateOnly? to)
     {
@@ -208,7 +208,7 @@ public class StatisticsRepository
         var dateFilter = BuildDateFilter(from, to);
         var param = new { From = from?.ToDateTime(TimeOnly.MinValue), To = to?.ToDateTime(TimeOnly.MinValue) };
 
-        // Tổng quan
+        // Overview
         var overviewSql = $"""
             SELECT
                 COUNT(*)                                          AS TotalCheckins,
@@ -223,7 +223,7 @@ public class StatisticsRepository
         """;
         var overview = await _connection.QuerySingleAsync<AttendanceOverviewDto>(overviewSql, param);
 
-        // Trend theo ngày
+        // Daily trend
         var trendSql = $"""
             SELECT
                 TO_CHAR(checkin_date, 'YYYY-MM-DD')               AS Date,
@@ -242,8 +242,8 @@ public class StatisticsRepository
     }
 
     /// <summary>
-    /// Thống kê điểm danh theo từng thành viên.
-    /// Bao gồm tỷ lệ đi làm dựa trên số ngày đăng ký trong work_schedule.
+    /// Attendance statistics by member.
+    /// Includes attendance rate based on registered days in work_schedule.
     /// </summary>
     public async Task<CursorPaginatedResult<MemberAttendanceStatsDto>> GetMemberAttendanceStatsAsync(
         DateOnly? from, DateOnly? to, Guid? cursor = null, int pageSize = 20, bool ascending = false)
@@ -328,7 +328,7 @@ public class StatisticsRepository
     // ════════════════════════════════════════════
 
     /// <summary>
-    /// Tổng quan lịch làm việc: phân bổ ngày, tổng intern/mentor.
+    /// Work schedule overview: day distribution, total interns/mentors.
     /// </summary>
     public async Task<WorkScheduleOverviewDto> GetWorkScheduleOverviewAsync(DateTimeOffset? weekStart = null, DateTimeOffset? weekEnd = null)
     {
@@ -389,7 +389,7 @@ public class StatisticsRepository
     }
 
     /// <summary>
-    /// Thống kê mentor load: mỗi mentor quản lý bao nhiêu intern.
+    /// Mentor load statistics: how many interns each mentor manages.
     /// </summary>
     public async Task<List<MentorLoadDto>> GetMentorLoadAsync()
     {
@@ -409,11 +409,11 @@ public class StatisticsRepository
     }
 
     // ════════════════════════════════════════════
-    // 4. DASHBOARD (Tổng hợp)
+    // 4. DASHBOARD (Comprehensive)
     // ════════════════════════════════════════════
 
     /// <summary>
-    /// Dashboard tổng hợp: task overview + attendance overview (30 ngày gần nhất) + work schedule overview.
+    /// Comprehensive dashboard: task overview + attendance overview (last 30 days) + work schedule overview.
     /// </summary>
     public async Task<DashboardDto> GetDashboardAsync()
     {
