@@ -188,6 +188,43 @@ public class AuthsController : BaseApiController
     }
 
     /// <summary>
+    /// Refresh the access token using a valid refresh token.
+    /// </summary>
+    /// <param name="refreshToken">The refresh token (optional, will use cookie if not provided).</param>
+    /// <returns>An IActionResult containing the new access token on success.</returns>
+    [HttpPost("refresh-token")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RefreshToken([FromBody] string? refreshToken)
+    {
+        try
+        {
+            var result = await _auth.RefreshToken(refreshToken);
+
+            if (result.Status != (int)AuthStatus.Success)
+            {
+                return StatusCode(result.Status, new
+                {
+                    httpStatus = result.Status,
+                    isSuccess = false,
+                    message = result.Message,
+                    errors = result.Errors
+                });
+            }
+
+            return Success(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(422, new
+            {
+                HttpStatus = HttpStatusCode.UnprocessableEntity,
+                IsSuccess = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
     /// Logout the current user.
     /// </summary>
     /// <returns></returns>

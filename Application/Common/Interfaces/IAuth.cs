@@ -8,6 +8,7 @@ public interface IAuth
 {
     public Task<AuthResponse> Login(AuthRequest model);
     Task<AuthResponse> RevokeRefreshToken(string? refreshToken);
+    Task<AuthResponse> RefreshToken(string? refreshToken);
     Task Logout();
     Task<bool> UpdateRemoveToken(string email);
 }

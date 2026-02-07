@@ -278,6 +278,84 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
         return new AuthResponse(AuthStatus.Success, "Refresh token revoked");
     }
 
+    public async Task<AuthResponse> RefreshToken(string? refreshToken)
+    {
+        // prefer explicit token, otherwise fall back to cookie
+        var refreshTokenCookieName = _config["Cookie:RefreshTokenCookieName"];
+        var tokenToRefresh = !string.IsNullOrWhiteSpace(refreshToken)
+            ? refreshToken
+            : _httpContextAccessor.HttpContext?.Request.Cookies[refreshTokenCookieName ?? string.Empty];
+
+        if (string.IsNullOrWhiteSpace(tokenToRefresh))
+        {
+            return new AuthResponse(AuthStatus.BadRequest, "Refresh token is required");
+        }
+
+        var hashedToken = HashToken(tokenToRefresh);
+
+        // Find user with this refresh token
+        var user = await _connection.QueryFirstOrDefaultAsync<User>(
+            """
+                SELECT * FROM users
+                WHERE token = @Token
+            """,
+            new { Token = hashedToken });
+
+        if (user == null)
+        {
+            return new AuthResponse(AuthStatus.Unauthorized, "Refresh token is invalid");
+        }
+
+        // Get user roles and permissions
+        var userRolesAndPermissions = await _userRepo.GetUserRolesAndPermissionsAsync(user.Id);
+
+        var claims = new List<Claim>
+        {
+            new ("user_id", user.Id.ToString()),
+            new (ClaimTypes.Email, user.Email),
+            new ("session_id", Uuid7.NewUuid7().ToGuid().ToString())
+        };
+
+        foreach (var role in userRolesAndPermissions.Roles)
+            claims.Add(new Claim(ClaimTypes.Role, role.Name));
+
+        var expiryHoursStr = _config["JwtSettings:AccessTokenExpirationHours"];
+
+        if (!double.TryParse(expiryHoursStr, out double expiryHours))
+        {
+            return new AuthResponse(AuthStatus.InternalServerError, "Invalid token expiry configuration");
+        }
+
+        var accessToken = GenerateAccessToken(claims);
+        var tokenExpiredTime = DateTime.UtcNow.AddHours((int)expiryHours);
+
+        var accessTokenCookieName = _config["Cookie:AccessTokenCookieName"];
+        var accessTokenExpiryName = _config["Cookie:AccessTokenExpiryName"];
+
+        if (string.IsNullOrWhiteSpace(accessTokenCookieName) || string.IsNullOrWhiteSpace(accessTokenExpiryName))
+        {
+            return new AuthResponse(AuthStatus.InternalServerError, "Missing cookie environment variables");
+        }
+
+        SetJWTTokenCookie(accessTokenCookieName, accessTokenExpiryName, accessToken, tokenExpiredTime);
+
+        var loginUser = new LoginDto
+        {
+            Email = user.Email,
+            Role = userRolesAndPermissions.Roles.FirstOrDefault()?.Name ?? string.Empty,
+            Permissions = [.. userRolesAndPermissions.Permissions.Select(p => p.Name)]
+        };
+
+        return new AuthResponse(
+            AuthStatus.Success,
+            accessToken,
+            tokenExpiredTime,
+            string.Empty,
+            null,
+            loginUser
+        );
+    }
+
     public async Task<bool> UpdateRemoveToken(string email)
     {
         var update = """
