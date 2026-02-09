@@ -49,10 +49,11 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
     {
         var where = new List<string>();
         var parameters = new DynamicParameters();
-        if (!string.IsNullOrWhiteSpace(request.Email))
+        var normalizedEmail = request.Email?.Trim().ToLower();
+        if (!string.IsNullOrWhiteSpace(normalizedEmail))
         {
-            where.Add("LOWER(email) LIKE LOWER(@Email)");
-            parameters.Add("Email", $"%{request.Email}%");
+            where.Add("email LIKE @Email");
+            parameters.Add("Email", $"{request.Email}%");
         }
         if (request.Active != null)
         {
