@@ -536,7 +536,7 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
         }
     }
 
-    private static SubmissionModel MapToSubmissionModel(Submission submissionResult, Tasks extendTask, User extendUser)
+    private static SubmissionModel MapToSubmissionModel(Submission submissionResult, Tasks? extendTask, User? extendUser)
     {
         return new SubmissionModel
         {
@@ -559,7 +559,7 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
             Updated_by = submissionResult.Updated_by,
             Deleted = submissionResult.Deleted,
             Active = submissionResult.Active,
-            Extend_task = new
+            Extend_task = extendTask != null ? new
             {
                 name = extendTask.Name,
                 description = extendTask.Description,
@@ -574,12 +574,12 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
                 allow_resubmit = extendTask.Allow_resubmit,
                 pass_point = extendTask.Pass_point,
                 completed_at = extendTask.Completed_at,
-            },
-            Extend_user = new
+            } : null,
+            Extend_user = extendUser != null ? new
             {
                 name = extendUser.Name,
                 profilepic = extendUser.ProfilePic
-            }
+            } : null
         };
     }
 
