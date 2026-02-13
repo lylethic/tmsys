@@ -82,7 +82,6 @@ public class ProjectMemberRepository : SimpleCrudRepository<ProjectMember, Guid>
             request: search,
             extraWhere: string.Join(" AND ", where),
             extraParams: param,
-            orderByColumn: "id",
             orderDirection: orderDirection,
             idColumn: "id"
         );

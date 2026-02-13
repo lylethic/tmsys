@@ -275,7 +275,6 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
     /// <param name="request"></param>
     /// <param name="extraWhere"></param>
     /// <param name="extraParams"></param>
-    /// <param name="orderByColumn"></param>
     /// <param name="orderDirection"></param>
     /// <param name="idColumn"></param>
     /// <returns></returns>
@@ -283,93 +282,62 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
         CursorPaginationRequest request,
         string? extraWhere = null,
         object? extraParams = null,
-        string orderByColumn = "id",           // primary order column (e.g., sort_order)
-        string orderDirection = "DESC",        // ASC or DESC for orderByColumn
-        string idColumn = "id"                 // stable unique secondary column
+        string orderDirection = "ASC",
+        string idColumn = "id"
     )
     {
         // Normalize direction
         orderDirection = (orderDirection ?? "DESC").ToUpper();
         if (orderDirection != "ASC" && orderDirection != "DESC") orderDirection = "DESC";
 
-        // Build base WHERE (filters that DO NOT include cursor)
-        var baseWhereClauses = new List<string>();
+        // Build WHERE clauses
+        var whereClauses = new List<string>();
         if (!string.IsNullOrWhiteSpace(extraWhere))
-            baseWhereClauses.Add($"({extraWhere})");
+            whereClauses.Add($"({extraWhere})");
 
-        var baseWhereSql = baseWhereClauses.Any()
-            ? " WHERE " + string.Join(" AND ", baseWhereClauses)
-            : "";
-
-        // Build cursor WHERE (composite on orderByColumn and id)
-        var cursorWhereSql = new StringBuilder();
-        var finalWhereClauses = new List<string>();
-        if (baseWhereClauses.Any())
-            finalWhereClauses.AddRange(baseWhereClauses);
-
-        if (request.Cursor.HasValue && request.CursorSortOrder.HasValue && orderByColumn != idColumn)
+        if (request.Cursor.HasValue)
         {
-            // composite cursor: (orderByColumn > lastSort) OR (orderByColumn = lastSort AND id > lastId)
-            // for DESC we invert comparisons
             if (orderDirection == "ASC")
-            {
-                cursorWhereSql.Append("(");
-                cursorWhereSql.Append($"{orderByColumn} > @CursorSortOrder");
-                cursorWhereSql.Append(" OR (");
-                cursorWhereSql.Append($"{orderByColumn} = @CursorSortOrder AND {idColumn} > @Cursor");
-                cursorWhereSql.Append("))");
-            }
-            else // DESC
-            {
-                cursorWhereSql.Append("(");
-                cursorWhereSql.Append($"{orderByColumn} < @CursorSortOrder");
-                cursorWhereSql.Append(" OR (");
-                cursorWhereSql.Append($"{orderByColumn} = @CursorSortOrder AND {idColumn} < @Cursor");
-                cursorWhereSql.Append("))");
-            }
-
-            finalWhereClauses.Add(cursorWhereSql.ToString());
-        }
-        else if (request.Cursor.HasValue)
-        {
-            // fallback to simple id cursor (keeps previous behavior)
-            if (request.Ascending)
-                finalWhereClauses.Add($"{idColumn} > @Cursor");
+                whereClauses.Add($"{idColumn} > @Cursor");
             else
-                finalWhereClauses.Add($"{idColumn} < @Cursor");
+                whereClauses.Add($"{idColumn} < @Cursor");
         }
 
-        var finalWhereSql = finalWhereClauses.Any()
-            ? " WHERE " + string.Join(" AND ", finalWhereClauses)
+        var whereSql = whereClauses.Any()
+            ? " WHERE " + string.Join(" AND ", whereClauses)
             : "";
 
-        // Build main SQL (apply ordering by orderByColumn then id as tiebreaker)
+        // Build main SQL
         var sql = new StringBuilder();
         sql.Append($"SELECT * FROM {_dbTableName}");
-        sql.Append(finalWhereSql);
-        sql.Append($" ORDER BY {orderByColumn} {orderDirection}, {idColumn} ASC"); // id ASC gives stability
+        sql.Append(whereSql);
+        sql.Append($" ORDER BY {idColumn} {orderDirection}");
         sql.Append(" LIMIT @Limit;");
 
-        // Build count SQL (count uses ONLY base filters, excluding cursor)
-        // var countSql = new StringBuilder();
-        // countSql.Append($"SELECT COUNT(*) FROM {_dbTableName}{baseWhereSql};");
-
-        // Prepare parameters: copy from extraParams then add cursor & limit
+        // Prepare parameters
         var param = new DynamicParameters(extraParams);
         param.Add("Cursor", request.Cursor);
-        param.Add("CursorSortOrder", request.CursorSortOrder);
         param.Add("Limit", request.PageSize + 1);
 
-        // Debug
-        Console.WriteLine("[SQL] " + sql);
-        // Console.WriteLine("[COUNT_SQL] " + countSql);
+        // Debug: print SQL with parameter values substituted
+        var debugSql = sql.ToString();
+        foreach (var name in param.ParameterNames)
+        {
+            var value = ((SqlMapper.IParameterLookup)param)[name];
+            var display = value switch
+            {
+                null => "NULL",
+                string s => $"'{s}'",
+                Guid g => $"'{g}'",
+                _ => value.ToString()!
+            };
+            debugSql = debugSql.Replace($"@{name}", display);
+        }
+        Console.WriteLine("[SQL] " + debugSql);
 
-        // Execute count and query
-        // var total = await _connection.ExecuteScalarAsync<long>(countSql.ToString(), extraParams);
         var list = (await _connection.QueryAsync<T>(sql.ToString(), param)).ToList();
 
         var result = new CursorPaginatedResult<T>();
-        // result.Total = total;
 
         if (list.Count > request.PageSize)
         {
@@ -379,18 +347,8 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
 
             var lastItem = pageData[^1];
             var idProp = typeof(T).GetProperty("Id") ?? typeof(T).GetProperty("id");
-            var sortProp = typeof(T).GetProperty("sort_order") ?? typeof(T).GetProperty("SortOrder") ?? typeof(T).GetProperty("sortOrder");
-
             if (idProp is not null)
                 result.NextCursor = (Guid?)idProp.GetValue(lastItem);
-
-            if (sortProp is not null)
-            {
-                var sortVal = sortProp.GetValue(lastItem);
-                if (sortVal is short s) result.NextCursorSortOrder = s;
-                else if (sortVal is int i) result.NextCursorSortOrder = (short)i;
-                else if (sortVal is long l) result.NextCursorSortOrder = (short)l;
-            }
         }
         else
         {
@@ -401,18 +359,8 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
             {
                 var lastItem = list[^1];
                 var idProp = typeof(T).GetProperty("Id") ?? typeof(T).GetProperty("id");
-                var sortProp = typeof(T).GetProperty("sort_order") ?? typeof(T).GetProperty("SortOrder") ?? typeof(T).GetProperty("sortOrder");
-
                 if (idProp is not null)
                     result.NextCursor = (Guid?)idProp.GetValue(lastItem);
-
-                if (sortProp is not null)
-                {
-                    var sortVal = sortProp.GetValue(lastItem);
-                    if (sortVal is short s) result.NextCursorSortOrder = s;
-                    else if (sortVal is int i) result.NextCursorSortOrder = (short)i;
-                    else if (sortVal is long l) result.NextCursorSortOrder = (short)l;
-                }
             }
         }
 

@@ -74,7 +74,6 @@ public class RoleRepository(IDbConnection connection) : SimpleCrudRepository<Rol
            request: request,
            extraWhere: string.Join(" AND ", where),
            extraParams: param,
-           orderByColumn: "id",
            orderDirection: request.Ascending ? "ASC" : "DESC",
            idColumn: "id"
          );

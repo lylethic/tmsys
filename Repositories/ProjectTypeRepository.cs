@@ -59,7 +59,6 @@ public class ProjectTypeRepository(IDbConnection connection, IAssistantService a
             request: request,
             extraWhere: string.Join(" AND ", where),
             extraParams: param,
-            orderByColumn: "id",
             idColumn: "id"
         );
         var result = new CursorPaginatedResult<ProjectTypeModel>
@@ -69,12 +68,6 @@ public class ProjectTypeRepository(IDbConnection connection, IAssistantService a
             HasNextPage = page.HasNextPage,
             Total = page.Total
         };
-        return result;
-    }
-
-    public async Task<PaginatedResult<ProjectType>> GetAllAsync(PaginationRequest request)
-    {
-        var result = await GetListWithPagination(request);
         return result;
     }
 

@@ -51,7 +51,6 @@ public class WorkScheduleRepository : SimpleCrudRepository<Work_schedule, Guid>,
            request: request,
            extraWhere: string.Join(" AND ", where),
            extraParams: param,
-           orderByColumn: "id",
            orderDirection: orderDirection,
            idColumn: "id"
          );
