@@ -172,7 +172,6 @@ public class TaskRepository : SimpleCrudRepository<Tasks, Guid>, ITaskRepository
             request: request,
             extraWhere: string.Join(" AND ", where),
             extraParams: param,
-            orderByColumn: "id",
             idColumn: "id"
          );
         return page;

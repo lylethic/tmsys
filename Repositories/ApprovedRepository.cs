@@ -76,7 +76,6 @@ public class ApprovedRepository : SimpleCrudRepository<Approved_status, Guid>, I
             request: search,
             extraWhere: string.Join(" AND ", where),
             extraParams: param,
-            orderByColumn: "id",
             orderDirection: orderDirection
         );
     }

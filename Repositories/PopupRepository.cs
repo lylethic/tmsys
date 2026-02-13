@@ -81,7 +81,6 @@ public class PopupRepository : SimpleCrudRepository<Popup, Guid>, IPopup
                 request: request,
                 extraWhere: string.Join(" AND ", where),
                 extraParams: param,
-                orderByColumn: "id",
                 orderDirection: orderDirection,
                 idColumn: "id"
             );

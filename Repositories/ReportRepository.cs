@@ -63,7 +63,6 @@ public class ReportRepository : SimpleCrudRepository<Report, Guid>, IReportRepos
            extraWhere: string.Join(" AND ", where),
            extraParams: param,
            orderDirection: request.Ascending ? "ASC" : "DESC",
-           orderByColumn: "id",
            idColumn: "id"
         );
     }

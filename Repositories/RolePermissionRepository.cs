@@ -59,7 +59,6 @@ public class RolePermissionRepository(IDbConnection connection) : SimpleCrudRepo
            request: request,
            extraWhere: string.Join(" AND ", where),
            extraParams: param,
-           orderByColumn: "id",
            orderDirection: request.Ascending ? "ASC" : "DESC",
            idColumn: "id"
          );

@@ -177,7 +177,6 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
                 request: request,
                 extraWhere: string.Join(" AND ", where),
                 extraParams: param,
-                orderByColumn: "id",
                 orderDirection: orderDirection,
                 idColumn: "id"
             );
