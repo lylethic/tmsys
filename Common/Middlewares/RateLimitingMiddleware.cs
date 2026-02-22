@@ -35,7 +35,7 @@ public class RateLimitingMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
             context.Response.ContentType = "application/json";
 
-            var response = new { Message = "Rate limit exceeded. Try again later." };
+            var response = new { message = "Rate limit exceeded. Try again later." };
             await context.Response.WriteAsync(JsonSerializer.Serialize(response));
             return;
         }

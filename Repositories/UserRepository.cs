@@ -44,37 +44,145 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         _env = env;
         this._cloudinaryService = cloudinaryService;
     }
+    public async Task<UserModel> GetByIDAsync(Guid id)
+    {
+        const string sql = """
+            WITH RolePermissionMap AS (
+                SELECT
+                    rp.role_id,
+                    STRING_AGG(p.name, ', ') AS permissions
+                FROM public.role_permissions AS rp
+                JOIN public.permissions AS p ON rp.permission_id = p.id
+                GROUP BY rp.role_id
+            )
+            SELECT
+                u.id,
+                u.name,
+                u.username,
+                u.email,
+                u.profilepic,
+                u.city,
+                u.created,
+                u.updated,
+                u.created_by,
+                u.updated_by,
+                u.active,
+                u.deleted,
+                u.last_login_time,
+                u.is_send_email,
+                r.name AS role_name,
+                rpm.permissions
+            FROM public.users AS u
+                LEFT JOIN public.user_roles AS ur ON u.id = ur.user_id
+                LEFT JOIN public.roles AS r ON ur.role_id = r.id
+                LEFT JOIN RolePermissionMap AS rpm ON r.id = rpm.role_id
+            WHERE u.id = @Id
+            ORDER BY u.id ASC
+        """;
+        var user = await _connection.QuerySingleOrDefaultAsync<UserModel>(sql, new { Id = id })
+            ?? throw new NotFoundException("user not found");
+        return user;
+    }
 
     public async Task<CursorPaginatedResult<UserModel>> GetAllAsync(UserSearch request)
     {
+        request ??= new UserSearch();
+
         var where = new List<string>();
         var parameters = new DynamicParameters();
-        var normalizedEmail = request.Email?.Trim().ToLower();
-        if (!string.IsNullOrWhiteSpace(normalizedEmail))
+        var keyword = request.Keyword?.Trim();
+        if (ValidatorHepler.CheckAtSymbol(keyword))
         {
-            where.Add("email LIKE @Email");
-            parameters.Add("Email", $"{request.Email}%");
+            where.Add("u.email LIKE LOWER(@Keyword)");
+            parameters.Add("Keyword", $"{keyword}%");
         }
-        if (request.Active != null)
+        else if (!string.IsNullOrWhiteSpace(keyword))
         {
-            where.Add("active = @Active");
+            where.Add("LOWER(u.name) LIKE LOWER(@Keyword)");
+            parameters.Add("Keyword", $"%{keyword}%");
+        }
+        if (request.Active is not null)
+        {
+            where.Add("u.active = @Active");
             parameters.Add("Active", request.Active);
-        }
-        if (!string.IsNullOrWhiteSpace(request.Name))
-        {
-            where.Add("LOWER(name) LIKE LOWER(@Name)");
-            parameters.Add("Name", $"%{request.Name}%");
         }
         if (request.Deleted is not null)
         {
-            where.Add("deleted = @Deleted");
+            where.Add("u.deleted = @Deleted");
             parameters.Add("Deleted", request.Deleted);
         }
-        return await this.GetListCursorBasedAsync<UserModel>(
-            request: request,
-            extraWhere: string.Join(" AND ", where),
-            extraParams: parameters
-        );
+
+        var role = request.Role?.Trim();
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            where.Add("LOWER(r.name) LIKE LOWER(@Role)");
+            parameters.Add("Role", $"%{role}%");
+        }
+
+        if (request.Cursor.HasValue)
+        {
+            where.Add("u.id > @Cursor");
+            parameters.Add("Cursor", request.Cursor);
+        }
+
+        var whereSql = where.Count > 0
+            ? $"WHERE {string.Join(" AND ", where)}"
+            : string.Empty;
+
+        var sql = $"""
+            WITH RolePermissionMap AS (
+                SELECT
+                    rp.role_id,
+                    STRING_AGG(p.name, ', ') AS permissions
+                FROM public.role_permissions AS rp
+                JOIN public.permissions AS p ON rp.permission_id = p.id
+                GROUP BY rp.role_id
+            )
+            SELECT
+                u.id,
+                u.name,
+                u.username,
+                u.email,
+                u.profilepic,
+                u.city,
+                u.created,
+                u.updated,
+                u.created_by,
+                u.updated_by,
+                u.active,
+                u.deleted,
+                u.last_login_time,
+                u.is_send_email,
+                r.name AS role_name,
+                rpm.permissions
+            FROM public.users AS u
+                LEFT JOIN public.user_roles AS ur ON u.id = ur.user_id
+                LEFT JOIN public.roles AS r ON ur.role_id = r.id
+                LEFT JOIN RolePermissionMap AS rpm ON r.id = rpm.role_id
+            {whereSql}
+            ORDER BY u.id ASC
+            LIMIT @Limit;
+        """;
+
+        parameters.Add("Limit", request.PageSize + 1);
+        var list = (await _connection.QueryAsync<UserModel>(sql, parameters)).ToList();
+
+        var result = new CursorPaginatedResult<UserModel>();
+        if (list.Count > request.PageSize)
+        {
+            result.HasNextPage = true;
+            result.Data = [.. list.Take(request.PageSize)];
+            result.NextCursor = result.Data[^1].Id;
+        }
+        else
+        {
+            result.HasNextPage = false;
+            result.Data = list;
+            if (result.Data.Count > 0)
+                result.NextCursor = result.Data[^1].Id;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -135,7 +243,6 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         return null!;
     }
 
-
     public async Task<User> GetEmailAsync(string email)
     {
         var isValidEmail = ValidatorHepler.EmailValidation(email);
@@ -160,9 +267,9 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
                 r.id as role_id, r.name as role_name,
                 p.id as permission_id, p.name as permission_name
             FROM user_roles ar
-                INNER JOIN roles r ON ar.role_id = r.id
-                INNER JOIN role_permissions rp ON r.id = rp.role_id
-                INNER JOIN permissions p ON rp.permission_id = p.id
+                LEFT JOIN roles r ON ar.role_id = r.id
+                LEFT JOIN role_permissions rp ON r.id = rp.role_id
+                LEFT JOIN permissions p ON rp.permission_id = p.id
             WHERE ar.user_id = @UserId
         """;
 

@@ -12,6 +12,8 @@ public class UserModel : DomainModel
     public string City { get; set; } = string.Empty;
     public DateTime Last_login_time { get; set; }
     public bool? Is_send_email { get; set; }
+    public string? Role_name { get; set; }
+    public string? Permissions { get; set; }
 }
 
 public class ExtendUser

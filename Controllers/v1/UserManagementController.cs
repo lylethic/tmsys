@@ -91,12 +91,12 @@ public class UserManagementController : BaseApiController
         }
     }
 
-    [HttpGet("id")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
         try
         {
-            var data = await _userRepo.GetByIdAsync(id);
+            var data = await _userRepo.GetByIDAsync(id);
             var result = _mapper.Map<UserModel>(data);
             return Success(result);
         }
@@ -106,7 +106,7 @@ public class UserManagementController : BaseApiController
         }
     }
 
-    [HttpGet("user_with_permission/id")]
+    [HttpGet("user_with_permission/{id}")]
     public async Task<IActionResult> GetUserWithPermissonById(Guid id)
     {
         try
@@ -138,7 +138,7 @@ public class UserManagementController : BaseApiController
         }
     }
 
-    [HttpDelete("id")]
+    [HttpDelete("{id}")]
     [RequirePermission("SYS_ADMIN", "DELETE")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -177,7 +177,7 @@ public class UserManagementController : BaseApiController
         }
     }
 
-    [HttpPatch("id")]
+    [HttpPatch("{id}")]
     [RequirePermission("SYS_ADMIN", "EDIT")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UserUpdate dto)
     {

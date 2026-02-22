@@ -66,5 +66,11 @@ namespace server.Common.Utils
             }
             return new string(numbers);
         }
+
+        public static bool CheckAtSymbol(string input, char symbol = '@')
+        {
+            if (string.IsNullOrWhiteSpace(input)) return false;
+            return input.Contains(symbol);
+        }
     }
 }

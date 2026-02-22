@@ -219,8 +219,8 @@ public class Startup
     {
         var rateLimitRule = new RateLimitRuleModel
         {
-            Limit = 5,
-            Window = TimeSpan.FromSeconds(10)
+            Limit = 100,
+            Window = TimeSpan.FromMinutes(1)
         };
 
         app.UseMiddleware<RateLimitingMiddleware>(

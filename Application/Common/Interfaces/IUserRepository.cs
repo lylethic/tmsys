@@ -13,6 +13,7 @@ namespace server.Application.Common.Interfaces
         Task<bool> DeleteItemsAsync(params Guid[] ids);
         Task<CursorPaginatedResult<UserModel>> GetAllAsync(UserSearch request);
         Task<User_Permisson_Dto> GetUserWithPermissionAsync(Guid id);
+        Task<UserModel> GetByIDAsync(Guid id);
         Task<User> GetByIdAsync(Guid id);
         Task<bool> UpdateItemAsync(Guid id, User entity);
         Task<User> RegisterUser(User entity);
