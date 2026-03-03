@@ -19,7 +19,7 @@ namespace server.Common.Settings
                 {
                     "v1", new OpenApiInfo
                     {
-                        Title = "Task Management System",
+                        Title = "TaskHub API",
                         Version = "v1"
                     }
                 }

@@ -8,6 +8,7 @@ using server.Application.DTOs;
 using server.Application.Request;
 using server.Application.Request.Search;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Domain.Entities;
 using server.Services;
 
@@ -19,8 +20,8 @@ public class ReportRepository : SimpleCrudRepository<Report, Guid>, IReportRepos
     private readonly IUserRepository _userRepository;
     private readonly IAssistantService _assistantService;
 
-    public ReportRepository(IDbConnection connection, IUserRepository userRepository, IAssistantService assistantService, IProjectRepository projectrepository)
-    : base(connection)
+    public ReportRepository(IDbConnection connection, ITransactionContext transactionContext, IUserRepository userRepository, IAssistantService assistantService, IProjectRepository projectrepository)
+    : base(connection, transactionContext)
     {
         _userRepository = userRepository;
         _assistantService = assistantService;

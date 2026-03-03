@@ -4,6 +4,7 @@ using Medo;
 using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Domain.Entities;
 using server.Services;
 
@@ -13,7 +14,7 @@ public class CompanyGeofenceRepository : SimpleCrudRepository<CompanyGeofence, G
 {
     private readonly IAssistantService _assistantService;
 
-    public CompanyGeofenceRepository(IDbConnection connection, IAssistantService assistantService) : base(connection)
+    public CompanyGeofenceRepository(IDbConnection connection, ITransactionContext transactionContext, IAssistantService assistantService) : base(connection, transactionContext)
     {
         _assistantService = assistantService;
     }
@@ -59,7 +60,8 @@ public class CompanyGeofenceRepository : SimpleCrudRepository<CompanyGeofence, G
         if (_connection.State != ConnectionState.Open)
             _connection.Open();
 
-        using var transaction = _connection.BeginTransaction();
+        var ownedTx = _transactionContext?.Current == null ? _connection.BeginTransaction() : null;
+        var tx = _transactionContext?.Current ?? ownedTx;
         try
         {
             if (entity.Active == true)
@@ -71,18 +73,18 @@ public class CompanyGeofenceRepository : SimpleCrudRepository<CompanyGeofence, G
                         updated_by = @Updated_by
                     where active = true and deleted = false;
                 """;
-                await _connection.ExecuteAsync(sqlDeactivate, new { Updated = now, Updated_by = userId }, transaction);
+                await _connection.ExecuteAsync(sqlDeactivate, new { Updated = now, Updated_by = userId }, tx);
             }
 
-            var inserted = await _connection.ExecuteAsync(sqlInsert, entity, transaction);
+            var inserted = await _connection.ExecuteAsync(sqlInsert, entity, tx);
             if (inserted <= 0)
                 throw new BadRequestException("Failed to insert company geofence into the database.");
 
-            transaction.Commit();
+            ownedTx?.Commit();
         }
         catch (Exception ex)
         {
-            transaction.Rollback();
+            ownedTx?.Rollback();
             throw new InternalErrorException(ex.Message);
         }
 
@@ -123,7 +125,8 @@ public class CompanyGeofenceRepository : SimpleCrudRepository<CompanyGeofence, G
         if (_connection.State != ConnectionState.Open)
             _connection.Open();
 
-        using var transaction = _connection.BeginTransaction();
+        var ownedTx2 = _transactionContext?.Current == null ? _connection.BeginTransaction() : null;
+        var tx2 = _transactionContext?.Current ?? ownedTx2;
         try
         {
             if (entity.Active == true)
@@ -135,19 +138,19 @@ public class CompanyGeofenceRepository : SimpleCrudRepository<CompanyGeofence, G
                         updated_by = @Updated_by
                     where id <> @Id and active = true and deleted = false;
                 """;
-                await _connection.ExecuteAsync(sqlDeactivate, new { entity.Id, Updated = now, Updated_by = userId }, transaction);
+                await _connection.ExecuteAsync(sqlDeactivate, new { entity.Id, Updated = now, Updated_by = userId }, tx2);
             }
 
-            var updated = await _connection.ExecuteAsync(sqlUpdate, entity, transaction);
+            var updated = await _connection.ExecuteAsync(sqlUpdate, entity, tx2);
             if (updated <= 0)
                 throw new BadRequestException("Failed to update company geofence.");
 
-            transaction.Commit();
+            ownedTx2?.Commit();
             return true;
         }
         catch (Exception ex)
         {
-            transaction.Rollback();
+            ownedTx2?.Rollback();
             throw new InternalErrorException(ex.Message);
         }
     }

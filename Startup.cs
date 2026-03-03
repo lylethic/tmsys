@@ -4,6 +4,7 @@ using Hangfire.PostgreSql;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
+using NetCore.AutoRegisterDi;
 using server.Application.Common.Respository;
 using server.Common.AutoMappers;
 using server.Common.CoreConstans;
@@ -13,6 +14,7 @@ using server.Common.Models;
 using server.Common.Settings;
 using server.Hubs;
 using server.Services;
+using System.Reflection;
 using System.Text.Json.Serialization;
 
 public class Startup
@@ -43,6 +45,17 @@ public class Startup
 
         // API Documentation (sử dụng extension method có sẵn)
         services.ConfigureApiDocumentation();
+
+        // var assembliesToScan = new[]
+        // {
+        //     Assembly.GetExecutingAssembly(),
+        //     Assembly.GetAssembly(typeof(MyServiceInAssembly1)),
+        //     Assembly.GetAssembly(typeof(MyServiceInAssembly2))
+        // };
+
+        services.RegisterAssemblyPublicNonGenericClasses()
+             .Where(c => c.Name.EndsWith("Service"))
+             .AsPublicImplementedInterfaces();
 
         // CORS
         ConfigureCors(services);

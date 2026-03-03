@@ -6,6 +6,7 @@ using Dapper;
 using Medo;
 using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
+using server.Common.Interfaces;
 using server.Application.DTOs;
 using server.Application.Request;
 using server.Application.Request.Search;
@@ -24,11 +25,12 @@ public class ProjectRepository : SimpleCrudRepository<Project, Guid>, IProjectRe
     private readonly IMapper _mapper;
 
     public ProjectRepository(IDbConnection connection,
+        ITransactionContext transactionContext,
         IAssistantService assistantService,
         IUserRepository userRepository,
         Lazy<IProjectMember> projectMemberRepository,
         IMapper mapper)
-    : base(connection)
+    : base(connection, transactionContext)
     {
         _assistantService = assistantService;
         _userRepository = userRepository;

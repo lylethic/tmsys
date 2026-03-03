@@ -14,7 +14,7 @@ namespace server.Repositories;
 public class ApprovedRepository : SimpleCrudRepository<Approved_status, Guid>, IApprovedStatus
 {
     private readonly ILogManager _logger;
-    public ApprovedRepository(IDbConnection connection, ILogManager logger) : base(connection)
+    public ApprovedRepository(IDbConnection connection, ITransactionContext transactionContext, ILogManager logger) : base(connection, transactionContext)
     {
         this._logger = logger;
     }

@@ -5,6 +5,7 @@ using Medo;
 using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Common.Utils;
 using server.Domain.Entities;
 
@@ -12,7 +13,7 @@ namespace server.Repositories;
 
 public class OTPRepository : SimpleCrudRepository<Otps, Guid>, IOtpRepository
 {
-    public OTPRepository(IDbConnection connection) : base(connection)
+    public OTPRepository(IDbConnection connection, ITransactionContext transactionContext) : base(connection, transactionContext)
     {
         this._connection = connection;
     }

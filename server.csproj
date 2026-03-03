@@ -58,6 +58,9 @@
         <Compile Include="Repositories\SubmissionRepository.cs" />
         <Compile Include="Repositories\ProjectMemberRepository.cs" />
         <Compile Include="Repositories\StatisticsRepository.cs" />
+        <Compile Include="Repositories\MenuGroupRepository.cs" />
+        <Compile Include="Repositories\SysMenuRepository.cs" />
+        <Compile Include="Repositories\RoleMenuRepository.cs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -94,6 +97,7 @@
         <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.8" />
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
         <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+        <PackageReference Include="NetCore.AutoRegisterDi" Version="2.2.1" />
         <PackageReference Include="Npgsql" Version="8.0.7" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.8" />
         <PackageReference Include="OpenAI" Version="2.5.0" />

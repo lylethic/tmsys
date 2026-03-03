@@ -7,6 +7,7 @@ using server.Application.Models;
 using server.Application.Request;
 using server.Application.Request.Search;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Domain.Entities;
 using server.Services;
 
@@ -19,9 +20,10 @@ public class SubmissionRepository : SimpleCrudRepository<Submission, Guid>, ISub
     private readonly IAssistantService _assistantService;
 
     public SubmissionRepository(IDbConnection connection,
+    ITransactionContext transactionContext,
     IUserRepository userRepository,
     IAssistantService assistantService,
-    ITaskRepository taskRepository) : base(connection)
+    ITaskRepository taskRepository) : base(connection, transactionContext)
     {
         _connection = connection;
         _userRepository = userRepository;

@@ -5,6 +5,7 @@ using server.Application.Common.Respository;
 using server.Application.DTOs;
 using server.Application.Request;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Domain.Entities;
 using server.Services;
 using Sprache;
@@ -17,7 +18,7 @@ namespace server.Repositories
     {
         private readonly IAssistantService _assistantService;
 
-        public DepartmentRepository(IDbConnection connection, IAssistantService assistantService) : base(connection)
+        public DepartmentRepository(IDbConnection connection, ITransactionContext transactionContext, IAssistantService assistantService) : base(connection, transactionContext)
         {
             _connection = connection;
             _assistantService = assistantService;
@@ -81,19 +82,20 @@ namespace server.Repositories
 
             if (_connection.State != ConnectionState.Open)
                 _connection.Open();
-            using var transaction = _connection.BeginTransaction();
 
+            var ownedTx = _transactionContext?.Current == null ? _connection.BeginTransaction() : null;
+            var tx = _transactionContext?.Current ?? ownedTx;
 
             try
             {
-                await _connection.ExecuteAsync(sql, departments, transaction);
-                transaction.Commit();
+                await _connection.ExecuteAsync(sql, departments, tx);
+                ownedTx?.Commit();
 
                 return departments;
             }
             catch
             {
-                transaction.Rollback();
+                ownedTx?.Rollback();
                 throw;
             }
         }

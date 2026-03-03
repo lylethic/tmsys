@@ -9,12 +9,13 @@ using server.Application.DTOs;
 using server.Application.Request;
 using server.Application.Search;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Domain.Entities;
 using server.Services;
 
 namespace server.Repositories;
 
-public class ProjectTypeRepository(IDbConnection connection, IAssistantService assistant) : SimpleCrudRepository<ProjectType, Guid>(connection), IProjectTypeRepository
+public class ProjectTypeRepository(IDbConnection connection, ITransactionContext transactionContext, IAssistantService assistant) : SimpleCrudRepository<ProjectType, Guid>(connection, transactionContext), IProjectTypeRepository
 {
     private readonly IAssistantService _assistant = assistant;
     public async Task<ProjectType> AddAsync(ProjectType entity)

@@ -7,6 +7,7 @@ using server.Application.Common.Respository;
 using server.Application.Request;
 using server.Application.Request.Search;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Domain.Entities;
 using server.Services;
 
@@ -15,7 +16,7 @@ namespace server.Repositories;
 public class PopupRepository : SimpleCrudRepository<Popup, Guid>, IPopup
 {
     private readonly IAssistantService _assistantService;
-    public PopupRepository(IDbConnection connection, IAssistantService assistantService) : base(connection)
+    public PopupRepository(IDbConnection connection, ITransactionContext transactionContext, IAssistantService assistantService) : base(connection, transactionContext)
     {
         _assistantService = assistantService;
     }

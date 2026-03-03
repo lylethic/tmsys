@@ -10,7 +10,7 @@ using server.Domain.Entities;
 
 namespace server.Repositories;
 
-public class RolePermissionRepository(IDbConnection connection) : SimpleCrudRepository<Role_permissions, Guid>(connection), IRolePermission
+public class RolePermissionRepository(IDbConnection connection, ITransactionContext transactionContext) : SimpleCrudRepository<Role_permissions, Guid>(connection, transactionContext), IRolePermission
 {
     public async Task<IEnumerable<Role_permissions>> AddAsync(IEnumerable<Role_permissions> entity)
     {

@@ -13,7 +13,7 @@ namespace server.Repositories;
 public class NotificationRepository : SimpleCrudRepository<Notification, Guid>
 {
     private readonly ILogManager _logManager;
-    public NotificationRepository(IDbConnection connection, ILogManager logManager) : base(connection)
+    public NotificationRepository(IDbConnection connection, ITransactionContext transactionContext, ILogManager logManager) : base(connection, transactionContext)
     {
         this._connection = connection;
         this._logManager = logManager;

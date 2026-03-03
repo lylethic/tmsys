@@ -8,7 +8,7 @@ using server.Domain.Entities;
 
 namespace server.Repositories;
 
-public class ClientRequestLogRepository(IDbConnection connection, ILogManager logger, IHttpContextAccessor contextAccessor) : SimpleCrudRepository<Client_request_log, Guid>(connection)
+public class ClientRequestLogRepository(IDbConnection connection, ITransactionContext transactionContext, ILogManager logger, IHttpContextAccessor contextAccessor) : SimpleCrudRepository<Client_request_log, Guid>(connection, transactionContext)
 {
     private readonly ILogManager _logger = logger;
     private readonly IHttpContextAccessor _contextAccessor = contextAccessor;

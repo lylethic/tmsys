@@ -28,12 +28,13 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
 
     public AuthenticationRepository(
         IDbConnection connection,
+        ITransactionContext transactionContext,
         IHttpContextAccessor httpContextAccessor,
         IMemoryCache memoryCache,
         IMailService gmailService,
         IUserRepository userRepo,
         IConfiguration configuration
-    ) : base(connection)
+    ) : base(connection, transactionContext)
     {
         this._connection = connection;
         this._httpContextAccessor = httpContextAccessor;
@@ -48,7 +49,6 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
         if (_connection.State != ConnectionState.Open)
             _connection.Open();
 
-        using var transaction = _connection.BeginTransaction();
         try
         {
             var user = await _userRepo.GetEmailAsync(model.Email);
@@ -138,9 +138,6 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
             // update last login time to users table
             await _userRepo.UpdateLoginTime(user.Id, hashedRefreshToken);
 
-            // commit
-            transaction.Commit();
-
             return new AuthResponse(
                 AuthStatus.Success,
                 accessToken,
@@ -152,7 +149,6 @@ public class AuthenticationRepository : SimpleCrudRepository<User, string>, IAut
         }
         catch
         {
-            transaction.Rollback();
             throw;
         }
     }

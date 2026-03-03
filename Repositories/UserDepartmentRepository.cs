@@ -7,6 +7,7 @@ using server.Application.Models;
 using server.Application.Request;
 using server.Application.Request.Search;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Domain.Entities;
 using server.Services;
 
@@ -19,10 +20,11 @@ namespace server.Repositories
         private readonly IUserRepository _userRepo;
         public UserDepartmentRepository(
             IDbConnection connection,
+            ITransactionContext transactionContext,
             IAssistantService assistantService,
             IUserRepository userRepository,
             IDepartment deparmentRepo
-            ) : base(connection)
+            ) : base(connection, transactionContext)
         {
             _connection = connection;
             _assistantService = assistantService;

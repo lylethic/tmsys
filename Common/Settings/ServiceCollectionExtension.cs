@@ -46,12 +46,15 @@ public static class ServiceCollectionExtension
 
         // Others
         services.AddSingleton<JwtConfig>();
-        services.AddTransient<IUnitOfWork, UnitOfWork>();
+        // Transaction / Unit of Work (Scoped: gắn với một HTTP request)
+        services.AddScoped<ITransactionContext, TransactionContext>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuth, AuthenticationRepository>();
 
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRolePermission, RolePermissionRepository>();
+        services.AddScoped<IUserRoles, UserRolesRespository>();
 
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, JwtPermissionHandler>();
@@ -74,6 +77,11 @@ public static class ServiceCollectionExtension
         services.AddScoped<ICompanyGeofence, CompanyGeofenceRepository>();
         services.AddScoped<ISubmissionRepository, SubmissionRepository>();
         services.AddScoped<IProjectMember, ProjectMemberRepository>();
+
+        // Dynamic Menu
+        services.AddScoped<IMenuGroupRepository, MenuGroupRepository>();
+        services.AddScoped<ISysMenuRepository, SysMenuRepository>();
+        services.AddScoped<IRoleMenuRepository, RoleMenuRepository>();
 
         // Hangfire
         services.AddTransient<IJobRunService, JobRunService>();

@@ -4,6 +4,7 @@ using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
 using server.Application.Request;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Domain.Entities;
 using System.Data;
 
@@ -11,7 +12,7 @@ namespace server.Repositories;
 
 public class PermissionRepository : SimpleCrudRepository<Permission, Guid>, IPermissionRepository
 {
-    public PermissionRepository(IDbConnection connection) : base(connection)
+    public PermissionRepository(IDbConnection connection, ITransactionContext transactionContext) : base(connection, transactionContext)
     {
 
     }

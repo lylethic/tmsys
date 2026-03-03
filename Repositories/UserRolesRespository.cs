@@ -10,7 +10,7 @@ using server.Domain.Entities;
 
 namespace server.Repositories;
 
-public class UserRolesRespository(IDbConnection connection) : SimpleCrudRepository<UserRolesRespository, Guid>(connection), IUserRoles
+public class UserRolesRespository(IDbConnection connection, ITransactionContext transactionContext) : SimpleCrudRepository<UserRolesRespository, Guid>(connection, transactionContext), IUserRoles
 {
     public async Task<User_roles> AddAsync(User_roles entity)
     {

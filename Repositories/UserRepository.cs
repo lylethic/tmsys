@@ -28,6 +28,7 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
 
     public UserRepository(
         IDbConnection connection,
+        ITransactionContext transactionContext,
         IRoleRepository roleRepo,
         IMailService gmailService,
         ILogManager logManager,
@@ -35,7 +36,7 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         IWebHostEnvironment env,
         ICloudinaryService cloudinaryService
     )
-        : base(connection)
+        : base(connection, transactionContext)
     {
         _roleRepo = roleRepo;
         _gmailService = gmailService;
@@ -557,20 +558,22 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         if (_connection.State != ConnectionState.Open)
             _connection.Open();
 
-        using var transaction = _connection.BeginTransaction();
+        // Sử dụng ambient transaction nếu có (UnitOfWork), nếu không tự quản lý transaction cục bộ
+        var ownedTx = _transactionContext?.Current == null ? _connection.BeginTransaction() : null;
+        var tx = _transactionContext?.Current ?? ownedTx;
         try
         {
             // Insert into users
-            await _connection.ExecuteAsync(insertUserSql, entity, transaction);
+            await _connection.ExecuteAsync(insertUserSql, entity, tx);
 
             // Insert into user_roles
             await _connection.ExecuteAsync(insertUserRoleSql, new
             {
                 UserId = entity.Id,
                 RoleId = entity.Role_id
-            }, transaction);
+            }, tx);
 
-            transaction.Commit();
+            ownedTx?.Commit();
 
             // Get the inserted user
             var inserted = await GetByIdAsync(entity.Id)
@@ -599,6 +602,7 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
         }
         catch (Exception ex)
         {
+            ownedTx?.Rollback();
             throw new InternalErrorException($"Failed to create user: {ex.Message}");
         }
     }

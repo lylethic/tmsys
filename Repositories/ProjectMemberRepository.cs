@@ -3,6 +3,7 @@ using Dapper;
 using Medo;
 using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
+using server.Common.Interfaces;
 using server.Application.Models;
 using server.Application.Request;
 using server.Application.Request.Search;
@@ -18,9 +19,10 @@ public class ProjectMemberRepository : SimpleCrudRepository<ProjectMember, Guid>
     private readonly Lazy<IProjectRepository> _projectRepo;
     private readonly IUserRepository _userRepo;
     public ProjectMemberRepository(IDbConnection connection,
+        ITransactionContext transactionContext,
         Lazy<IProjectRepository> projectRepo,
         IUserRepository userRepo,
-        IAssistantService assistantService) : base(connection)
+        IAssistantService assistantService) : base(connection, transactionContext)
     {
         this._projectRepo = projectRepo;
         this._userRepo = userRepo;

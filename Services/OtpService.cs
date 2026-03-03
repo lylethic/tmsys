@@ -14,6 +14,7 @@ namespace server.Services;
 public class OtpService : IOtpService
 {
     private readonly IDbConnection _connection;
+    private readonly ITransactionContext? _transactionContext;
     private readonly IUserRepository _userRepo;
     private readonly IOtpRepository _otpRepo;
     private readonly IAuth _authService;
@@ -22,6 +23,7 @@ public class OtpService : IOtpService
 
     public OtpService(
         IDbConnection dbConnection,
+        ITransactionContext transactionContext,
         IUserRepository userRepo,
         IOtpRepository otpRepo,
         IAuth authService,
@@ -29,6 +31,7 @@ public class OtpService : IOtpService
         ILogManager loggerManager)
     {
         _connection = dbConnection;
+        _transactionContext = transactionContext;
         _userRepo = userRepo;
         _otpRepo = otpRepo;
         _authService = authService;
@@ -194,7 +197,8 @@ public class OtpService : IOtpService
         if (_connection.State != ConnectionState.Open)
             _connection.Open();
 
-        using var transaction = _connection.BeginTransaction();
+        var ownedTx = _transactionContext?.Current == null ? _connection.BeginTransaction() : null;
+        var transaction = _transactionContext?.Current ?? ownedTx;
         try
         {
             string userSql = """
@@ -268,7 +272,7 @@ public class OtpService : IOtpService
                     Id = userId
                 }, transaction);
 
-                transaction.Commit();
+                ownedTx?.Commit();
                 return (false, message);
             }
 
@@ -295,12 +299,12 @@ public class OtpService : IOtpService
             await _connection.ExecuteAsync(updateUserSuccessSql, new { UserId = userId, Now = DateTime.UtcNow }, transaction);
             await _connection.ExecuteAsync(updateOtpSql, new { OtpId = otpId, Now = DateTime.UtcNow }, transaction);
 
-            transaction.Commit();
+            ownedTx?.Commit();
             return (true, "Authentication successful.");
         }
         catch (Exception ex)
         {
-            transaction.Rollback();
+            ownedTx?.Rollback();
             throw new InternalErrorException($"Internal error: {ex.Message}");
         }
         finally

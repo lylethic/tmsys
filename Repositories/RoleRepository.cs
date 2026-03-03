@@ -12,7 +12,7 @@ using server.Application.Search;
 
 namespace server.Repositories;
 
-public class RoleRepository(IDbConnection connection) : SimpleCrudRepository<Role, Guid>(connection), IRoleRepository
+public class RoleRepository(IDbConnection connection, ITransactionContext transactionContext) : SimpleCrudRepository<Role, Guid>(connection, transactionContext), IRoleRepository
 {
     public async Task<Role> AddAsync(Role entity)
     {

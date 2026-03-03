@@ -103,6 +103,27 @@ public class AppAutoMapper : Profile
             .ForMember(dest => dest.updated, opt => opt.MapFrom(src => src.Updated))
             .ForMember(dest => dest.updated_by, opt => opt.MapFrom(src => src.Updated_by))
             .ForMember(dest => dest.deleted, opt => opt.MapFrom(src => src.Deleted));
+
+        // ── Dynamic Menu ────────────────────────────────────────────────────
+        // MenuGroup
+        CreateMap<MenuGroupCreateDto, MenuGroup>();
+        CreateMap<MenuGroupUpdateDto, MenuGroup>();
+        CreateMap<MenuGroup, MenuGroupResponseDto>()
+            .ForMember(dest => dest.Children, opt => opt.Ignore())
+            .ForMember(dest => dest.Menus, opt => opt.Ignore());
+
+        // SysMenu
+        CreateMap<SysMenuCreateDto, SysMenu>();
+        CreateMap<SysMenuUpdateDto, SysMenu>();
+        CreateMap<SysMenu, SysMenuResponseDto>()
+            .ForMember(dest => dest.MenuGroupName, opt => opt.Ignore());
+
+        // RoleMenu
+        CreateMap<RoleMenuCreateDto, RoleMenu>();
+        CreateMap<RoleMenuUpdateDto, RoleMenu>();
+        CreateMap<RoleMenu, RoleMenuResponseDto>()
+            .ForMember(dest => dest.RoleName, opt => opt.Ignore())
+            .ForMember(dest => dest.MenuName, opt => opt.Ignore());
     }
 
     private static List<ProjectMemberInfo>? DeserializeUsers(string? json)

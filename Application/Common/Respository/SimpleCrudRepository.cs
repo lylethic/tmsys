@@ -11,33 +11,37 @@ using Npgsql;
 
 namespace server.Application.Common.Respository;
 
-public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : class
+public class SimpleCrudRepository<T, ID> where T : class
 {
-    protected IDbConnection _connection = connection;
-    protected string _dbTableName = typeof(T).GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>()?.Name
-        ?? typeof(T).GetCustomAttribute<TableAttribute>()?.Name
-        ?? typeof(T).Name;
+    protected IDbConnection _connection;
+    protected ITransactionContext? _transactionContext;
+    protected readonly string _dbTableName;
 
-    public async Task<IDbTransaction> BeginTransactionAsync()
+    /// <summary>Transaction hiện tại từ UnitOfWork (null nếu không có ambient transaction).</summary>
+    protected IDbTransaction? Tx => _transactionContext?.Current;
+
+    protected SimpleCrudRepository(IDbConnection connection)
     {
-        if (_connection is NpgsqlConnection npgsqlConn)
-        {
-            // PostgreSQL async transaction
-            return await npgsqlConn.BeginTransactionAsync();
-        }
+        _connection = connection;
+        _dbTableName = typeof(T).GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>()?.Name
+            ?? typeof(T).GetCustomAttribute<TableAttribute>()?.Name
+            ?? typeof(T).Name;
+    }
 
-        // Fallback: synchronous transaction for other providers
-        return _connection.BeginTransaction();
+    protected SimpleCrudRepository(IDbConnection connection, ITransactionContext transactionContext)
+        : this(connection)
+    {
+        _transactionContext = transactionContext;
     }
 
     public async Task<IEnumerable<T>> GetAllAsync()
     {
-        return await _connection.GetAllAsync<T>();
+        return await _connection.GetAllAsync<T>(transaction: Tx);
     }
 
     public virtual async Task<T> GetByIDAsync<TKey>(TKey id)
     {
-        return await _connection.GetAsync<T>(id);
+        return await _connection.GetAsync<T>(id, transaction: Tx);
     }
 
     /// <summary>
@@ -57,7 +61,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
             LIMIT 1;
         """;
 
-        return await _connection.QueryFirstOrDefaultAsync<T>(sql, new { Id = id });
+        return await _connection.QueryFirstOrDefaultAsync<T>(sql, new { Id = id }, transaction: Tx);
     }
 
     /// <summary>
@@ -82,7 +86,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
             PageSize = request.PageSize
         };
 
-        using var multi = await _connection.QueryMultipleAsync(sql, parameters);
+        using var multi = await _connection.QueryMultipleAsync(sql, parameters, transaction: Tx);
         var data = multi.Read<T>().ToList();
         var totalCount = multi.ReadSingle<int>();
 
@@ -107,7 +111,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
         try
         {
             var parameters = parameterMapper(filter);
-            var result = (await _connection.QueryAsync<TResult>(sqlQuery, parameters)).ToList();
+            var result = (await _connection.QueryAsync<TResult>(sqlQuery, parameters, transaction: Tx)).ToList();
 
             // Extract Total_count from the first result, casting to IHasTotalCount
             long totalCount = 0;
@@ -175,7 +179,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
         dynamicParams.Add("Offset", (request.PageIndex - 1) * request.PageSize);
         dynamicParams.Add("PageSize", request.PageSize);
 
-        using var multi = await _connection.QueryMultipleAsync(sql.ToString(), dynamicParams);
+        using var multi = await _connection.QueryMultipleAsync(sql.ToString(), dynamicParams, transaction: Tx);
         var data = multi.Read<T>().ToList();
         var totalCount = multi.ReadSingle<int>();
 
@@ -190,12 +194,12 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
 
     public async Task<T?> GetOneByConditionAsync(string sql, object? param = null)
     {
-        return await _connection.QuerySingleOrDefaultAsync<T>(sql, param);
+        return await _connection.QuerySingleOrDefaultAsync<T>(sql, param, transaction: Tx);
     }
 
     public async Task<T> UpdateAsync(T entity)
     {
-        await _connection.UpdateAsync(entity);
+        await _connection.UpdateAsync(entity, transaction: Tx);
         return entity;
     }
 
@@ -208,7 +212,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
             WHERE id = @id
         """;
 
-        await _connection.ExecuteAsync(sql, new { id });
+        await _connection.ExecuteAsync(sql, new { id }, transaction: Tx);
     }
 
     public virtual async Task<IEnumerable<T>> ExecuteFunctionAsync<U>(string functionName, U parameters)
@@ -242,7 +246,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
             var sql = command.ToString();
             Console.WriteLine($"[SQL] {sql}"); // Debug log
 
-            var result = await _connection.QueryAsync<T>(sql, parameters);
+            var result = await _connection.QueryAsync<T>(sql, parameters, transaction: Tx);
             return result;
         }
         catch (Exception ex)
@@ -335,7 +339,7 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
         }
         Console.WriteLine("[SQL] " + debugSql);
 
-        var list = (await _connection.QueryAsync<T>(sql.ToString(), param)).ToList();
+        var list = (await _connection.QueryAsync<T>(sql.ToString(), param, transaction: Tx)).ToList();
 
         var result = new CursorPaginatedResult<T>();
 
@@ -369,23 +373,23 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
 
     public async Task<T> CreateAsync(T entity)
     {
-        await _connection.InsertAsync(entity);
+        await _connection.InsertAsync(entity, transaction: Tx);
         return entity;
     }
 
     public async Task AddManyAsync(IEnumerable<T> items)
     {
-        await _connection.InsertAsync(items);
+        await _connection.InsertAsync(items, transaction: Tx);
     }
 
     public async Task DeleteAsync(T entity)
     {
-        await _connection.DeleteAsync(entity);
+        await _connection.DeleteAsync(entity, transaction: Tx);
     }
 
     public async Task DeleteAsync(IEnumerable<T> entity)
     {
-        await _connection.DeleteAsync(entity);
+        await _connection.DeleteAsync(entity, transaction: Tx);
     }
 
     /// <summary>
@@ -398,6 +402,6 @@ public class SimpleCrudRepository<T, ID>(IDbConnection connection) where T : cla
     {
         var entity = (T)Activator.CreateInstance(typeof(T));
         typeof(T).GetProperty("id")!.SetValue(entity, id);
-        return await _connection.DeleteAsync(entity);
+        return await _connection.DeleteAsync(entity, transaction: Tx);
     }
 }

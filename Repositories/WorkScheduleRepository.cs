@@ -6,6 +6,7 @@ using server.Application.DTOs;
 using server.Application.Request;
 using server.Application.Request.Search;
 using server.Common.Exceptions;
+using server.Common.Interfaces;
 using server.Domain.Entities;
 using server.Services;
 using System.Data;
@@ -15,7 +16,7 @@ namespace server.Repositories;
 public class WorkScheduleRepository : SimpleCrudRepository<Work_schedule, Guid>, IWorkSchedule
 {
     private readonly IAssistantService _assistantService;
-    public WorkScheduleRepository(IDbConnection connection, IAssistantService assistantService) : base(connection)
+    public WorkScheduleRepository(IDbConnection connection, ITransactionContext transactionContext, IAssistantService assistantService) : base(connection, transactionContext)
     {
         _assistantService = assistantService;
     }
