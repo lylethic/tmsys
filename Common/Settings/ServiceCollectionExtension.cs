@@ -29,6 +29,7 @@ public static class ServiceCollectionExtension
 
         // Email
         services.AddScoped<IMailService, GmailAssistantService>();
+        services.AddScoped<WelcomeEmailJobService>();
 
         // automatically binds the values from appsettings.json → GmailOptions class.
         services.Configure<GmailOptions>(configuration.GetSection("GmailOptions"));

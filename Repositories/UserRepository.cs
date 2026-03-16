@@ -1,4 +1,5 @@
 using Dapper;
+using Hangfire;
 using Medo;
 using server.Application.Common.Interfaces;
 using server.Application.Common.Respository;
@@ -20,29 +21,26 @@ namespace server.Repositories;
 public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
 {
     private readonly IRoleRepository _roleRepo;
-    private readonly IMailService _gmailService;
+    private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly ILogManager _logManager;
     private IAssistantService _assistantService;
-    private readonly IWebHostEnvironment _env;
     private readonly ICloudinaryService _cloudinaryService;
 
     public UserRepository(
         IDbConnection connection,
         ITransactionContext transactionContext,
         IRoleRepository roleRepo,
-        IMailService gmailService,
+        IBackgroundJobClient backgroundJobClient,
         ILogManager logManager,
         IAssistantService assistantService,
-        IWebHostEnvironment env,
         ICloudinaryService cloudinaryService
     )
         : base(connection, transactionContext)
     {
         _roleRepo = roleRepo;
-        _gmailService = gmailService;
+        _backgroundJobClient = backgroundJobClient;
         _logManager = logManager;
         _assistantService = assistantService;
-        _env = env;
         this._cloudinaryService = cloudinaryService;
     }
     public async Task<UserModel> GetByIDAsync(Guid id)
@@ -374,24 +372,9 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
             var inserted = await GetByIdAsync(entity.Id)
                 ?? throw new BadRequestException("user created, but failed to retrieve it.");
 
-            // --- Load Email Template ---
-            var templatePath = Path.Combine(_env.ContentRootPath, "wwwroot", "WelcomeEmail.html");
-
-            if (!File.Exists(templatePath))
-                throw new FileNotFoundException($"Email template not found at {templatePath}");
-
-            var body = await File.ReadAllTextAsync(templatePath);
-
-            // Replace placeholders
-            body = body.Replace("{{Email}}", entity.Email)
-                       .Replace("{{Name}}", entity.Name ?? "User")
-                       .Replace("{{AppName}}", "Loopy");
-
-            var subject = "Welcome to Loopy!";
-
-            // Send email
-            var emailRequest = new SendEmailRequest(entity.Email, subject, body);
-            await _gmailService.SendEmailAsync(emailRequest);
+            var jobId = _backgroundJobClient.Enqueue<WelcomeEmailJobService>(
+                job => job.SendWelcomeEmailAsync(entity.Email, entity.Name));
+            _logManager.Info($"Welcome email job queued for user {entity.Id} with job id {jobId}");
 
             return inserted;
         }
@@ -579,24 +562,9 @@ public class UserRepository : SimpleCrudRepository<User, Guid>, IUserRepository
             var inserted = await GetByIdAsync(entity.Id)
                 ?? throw new BadRequestException("User created, but failed to retrieve it.");
 
-            // --- Load Email Template ---
-            var templatePath = Path.Combine(_env.ContentRootPath, "wwwroot", "Resource/WelcomeEmail.html");
-
-            if (!File.Exists(templatePath))
-                throw new FileNotFoundException($"Email template not found at {templatePath}");
-
-            var body = await File.ReadAllTextAsync(templatePath);
-
-            // Replace placeholders
-            body = body.Replace("{{Email}}", entity.Email)
-                       .Replace("{{Name}}", entity.Name ?? "User")
-                       .Replace("{{AppName}}", "Loopy");
-
-            var subject = "Welcome to Loopy!";
-
-            // Send email
-            var emailRequest = new SendEmailRequest(entity.Email, subject, body);
-            await _gmailService.SendEmailAsync(emailRequest);
+            var jobId = _backgroundJobClient.Enqueue<WelcomeEmailJobService>(
+                job => job.SendWelcomeEmailAsync(entity.Email, entity.Name));
+            _logManager.Info($"Welcome email job queued for user {entity.Id} with job id {jobId}");
 
             return inserted;
         }
